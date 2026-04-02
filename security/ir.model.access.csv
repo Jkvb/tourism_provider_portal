@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tourism_provider_admin,access.tourism.provider.admin,model_tourism_provider,tourism_provider_portal.group_tourism_admin,1,1,1,1
+access_tourism_provider_validator,access.tourism.provider.validator,model_tourism_provider,tourism_provider_portal.group_tourism_validator,1,1,1,0
+access_tourism_provider_portal,access.tourism.provider.portal,model_tourism_provider,base.group_portal,1,1,1,0
+access_tourism_provider_category_admin,access.tourism.provider.category.admin,model_tourism_provider_category,tourism_provider_portal.group_tourism_admin,1,1,1,1
+access_tourism_provider_category_validator,access.tourism.provider.category.validator,model_tourism_provider_category,tourism_provider_portal.group_tourism_validator,1,0,0,0
+access_tourism_provider_image_admin,access.tourism.provider.image.admin,model_tourism_provider_image,tourism_provider_portal.group_tourism_admin,1,1,1,1
+access_tourism_provider_image_validator,access.tourism.provider.image.validator,model_tourism_provider_image,tourism_provider_portal.group_tourism_validator,1,1,1,0
+access_tourism_provider_image_portal,access.tourism.provider.image.portal,model_tourism_provider_image,base.group_portal,1,1,1,0
