@@ -1,0 +1,55 @@
+.tp-wrap {
+  .tp-hero {
+    min-height: 70vh;
+    background:
+      linear-gradient(120deg, rgba(15, 23, 42, 0.86), rgba(30, 64, 175, 0.6)),
+      url('/web/image/website.default_website/1/favicon') center/cover no-repeat;
+  }
+
+  .tp-hero-card {
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .tp-category-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.9rem;
+    padding: 1rem;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+    }
+  }
+
+  .tp-provider-card {
+    border-radius: 1rem;
+
+    .card-img-top {
+      height: 210px;
+      object-fit: cover;
+      border-top-left-radius: 1rem;
+      border-top-right-radius: 1rem;
+    }
+  }
+
+  .tp-register-strip {
+    border-radius: 1rem;
+    background: linear-gradient(120deg, #dbeafe, #eef2ff);
+    border: 1px solid #bfdbfe;
+  }
+}
+
+.tp-form {
+  border-radius: 1rem;
+
+  label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+}
