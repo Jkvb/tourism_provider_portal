@@ -8,13 +8,11 @@
 
     <record id="group_tourism_admin" model="res.groups">
         <field name="name">Turismo / Administrador</field>
-        <field name="category_id" ref="tourism_provider_portal.module_category_tourism"/>
         <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/>
     </record>
 
     <record id="group_tourism_validator" model="res.groups">
         <field name="name">Turismo / Validador</field>
-        <field name="category_id" ref="tourism_provider_portal.module_category_tourism"/>
     </record>
 
     <record id="tourism_provider_portal_rule_own" model="ir.rule">
