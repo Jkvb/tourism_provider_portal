@@ -4,19 +4,18 @@
         <field name="name">tourism.provider.search</field>
         <field name="model">tourism.provider</field>
         <field name="arch" type="xml">
-            <search>
+            <search string="Buscar prestadores">
                 <field name="name"/>
                 <field name="responsible_name"/>
                 <field name="category_id"/>
-                <field name="state"/>
+                <separator/>
                 <filter string="Pendientes" name="pending" domain="[('state','=','pending')]"/>
                 <filter string="Aprobados" name="approved" domain="[('state','=','approved')]"/>
                 <filter string="Publicados" name="published" domain="[('state','=','published')]"/>
                 <filter string="Rechazados" name="rejected" domain="[('state','=','rejected')]"/>
-                <group expand="0" string="Agrupar por">
-                    <filter string="Categoría" context="{'group_by':'category_id'}"/>
-                    <filter string="Estado" context="{'group_by':'state'}"/>
-                </group>
+                <separator/>
+                <filter string="Agrupar por categoría" name="group_by_category" context="{'group_by': 'category_id'}"/>
+                <filter string="Agrupar por estado" name="group_by_state" context="{'group_by': 'state'}"/>
             </search>
         </field>
     </record>
