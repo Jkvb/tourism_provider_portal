@@ -99,6 +99,10 @@ class TourismProvider(models.Model):
             rec.message_post(body=_("Solicitud enviada a revisión."))
         return True
 
+    def action_submit_review(self):
+        """Compatibilidad con vistas que usan el nombre corto del botón."""
+        return self.action_submit_for_review()
+
     def action_approve(self):
         self._check_validator()
         for rec in self:
