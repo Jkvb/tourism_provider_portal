@@ -24,7 +24,7 @@
         <field name="name">tourism.provider.tree</field>
         <field name="model">tourism.provider</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="category_id"/>
                 <field name="responsible_name"/>
@@ -33,7 +33,7 @@
                 <field name="state"/>
                 <field name="is_published"/>
                 <field name="review_date"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -133,11 +133,11 @@
                         </page>
                         <page string="Galería">
                             <field name="gallery_image_ids" context="{'default_provider_id': active_id}">
-                                <tree editable="bottom">
+                                <list editable="bottom">
                                     <field name="sequence"/>
                                     <field name="name"/>
                                     <field name="image_1920" widget="image"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                         <page string="Revisión">
@@ -167,14 +167,14 @@
     <record id="action_tourism_provider" model="ir.actions.act_window">
         <field name="name">Prestadores</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
 
     <record id="action_tourism_provider_pending" model="ir.actions.act_window">
         <field name="name">Solicitudes pendientes</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('state','=','pending')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
@@ -182,7 +182,7 @@
     <record id="action_tourism_provider_published" model="ir.actions.act_window">
         <field name="name">Publicados</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('state','=','published')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
@@ -190,7 +190,7 @@
     <record id="action_tourism_provider_rejected" model="ir.actions.act_window">
         <field name="name">Rechazados</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('state','=','rejected')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
