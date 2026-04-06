@@ -4,14 +4,14 @@
         <field name="name">tourism.provider.category.tree</field>
         <field name="model">tourism.provider.category</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="sequence"/>
                 <field name="name"/>
                 <field name="icon"/>
                 <field name="color"/>
                 <field name="active"/>
                 <field name="provider_count" readonly="1"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -48,7 +48,7 @@
     <record id="action_tourism_category" model="ir.actions.act_window">
         <field name="name">Categorías</field>
         <field name="res_model">tourism.provider.category</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_tourism_category_search"/>
     </record>
 </odoo>
