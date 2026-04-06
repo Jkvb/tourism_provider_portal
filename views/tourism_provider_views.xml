@@ -72,7 +72,7 @@
         <field name="arch" type="xml">
             <form string="Prestador turístico">
                 <header>
-                    <button name="action_submit_for_review" type="object" string="Enviar a revisión" class="btn-primary" invisible="state not in ('draft','rejected','unpublished')"/>
+                    <button name="action_submit_review" type="object" string="Enviar a revisión" class="btn-primary" invisible="state not in ('draft','rejected','unpublished')"/>
                     <button name="action_approve" type="object" string="Aprobar" class="btn-success" invisible="state != 'pending'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
                     <button name="action_reject" type="object" string="Rechazar" class="btn-danger" invisible="state != 'pending'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
                     <button name="action_publish" type="object" string="Publicar" class="btn-success" invisible="state != 'approved'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
