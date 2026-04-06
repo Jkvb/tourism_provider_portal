@@ -132,7 +132,7 @@
                             </group>
                         </page>
                         <page string="Galería">
-                            <field name="gallery_image_ids" context="{'default_provider_id': active_id}">
+                            <field name="gallery_image_ids" context="{'default_provider_id': id}">
                                 <list editable="bottom">
                                     <field name="sequence"/>
                                     <field name="name"/>
