@@ -1,5 +1,7 @@
+import secrets
+
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 from odoo.tools import html_escape
 
@@ -10,14 +12,19 @@ class TourismProvider(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
-    name = fields.Char(required=True, tracking=True)
-    responsible_name = fields.Char(required=True)
-    category_id = fields.Many2one("tourism.provider.category", required=True, index=True)
+    name = fields.Char(tracking=True)
+    responsible_name = fields.Char()
+    category_id = fields.Many2one("tourism.provider.category", index=True)
     description = fields.Html(sanitize=True)
 
     phone = fields.Char()
-    whatsapp = fields.Char()
     email = fields.Char()
+    signup_email = fields.Char(required=True, index=True, tracking=True)
+    email_confirmed = fields.Boolean(default=False, tracking=True)
+    confirmation_token = fields.Char(index=True, copy=False)
+    confirmation_sent_date = fields.Datetime(copy=False)
+    confirmation_date = fields.Datetime(readonly=True, copy=False)
+
     street = fields.Char(string="Dirección")
     location_reference = fields.Char(string="Ubicación / referencia")
     city = fields.Char(string="Municipio")
@@ -38,6 +45,7 @@ class TourismProvider(models.Model):
 
     state = fields.Selection(
         [
+            ("incomplete", "Perfil incompleto"),
             ("draft", "Borrador"),
             ("pending", "Pendiente de revisión"),
             ("approved", "Aprobado"),
@@ -45,12 +53,12 @@ class TourismProvider(models.Model):
             ("published", "Publicado"),
             ("unpublished", "Despublicado"),
         ],
-        default="draft",
+        default="incomplete",
         tracking=True,
         index=True,
     )
 
-    portal_user_id = fields.Many2one("res.users", string="Usuario portal", tracking=True)
+    portal_user_id = fields.Many2one("res.users", string="Usuario portal", tracking=True, required=True)
     terms_accepted = fields.Boolean(string="Acepta términos", default=False)
 
     is_published = fields.Boolean(default=False, tracking=True)
@@ -63,22 +71,48 @@ class TourismProvider(models.Model):
     internal_notes = fields.Text(string="Observaciones internas")
 
     website_slug = fields.Char(compute="_compute_website_slug", store=True)
+    profile_completion = fields.Integer(compute="_compute_profile_completion")
 
     _sql_constraints = [
-        (
-            "name_category_uniq",
-            "unique(name, category_id)",
-            "Ya existe un prestador con ese nombre en la categoría seleccionada.",
-        )
+        ("tourism_provider_signup_email_uniq", "unique(signup_email)", "Este correo ya tiene un perfil registrado."),
     ]
 
     @api.depends("name")
     def _compute_website_slug(self):
         for record in self:
-            safe_name = html_escape(record.name or "prestador")
+            safe_name = html_escape(record.name or record.signup_email or "prestador")
             base = safe_name.lower().replace(" ", "-")
             slug = "".join(ch for ch in base if ch.isalnum() or ch == "-").strip("-")
             record.website_slug = slug or f"prestador-{record.id or 'nuevo'}"
+
+    @api.depends(
+        "name",
+        "responsible_name",
+        "phone",
+        "description",
+        "category_id",
+        "street",
+        "schedule",
+        "services_description",
+        "profile_image_1920",
+        "cover_image_1920",
+    )
+    def _compute_profile_completion(self):
+        fields_to_check = [
+            "name",
+            "responsible_name",
+            "phone",
+            "description",
+            "category_id",
+            "street",
+            "schedule",
+            "services_description",
+            "profile_image_1920",
+            "cover_image_1920",
+        ]
+        for rec in self:
+            filled = sum(1 for field_name in fields_to_check if rec[field_name])
+            rec.profile_completion = int((filled / len(fields_to_check)) * 100)
 
     def _check_validator(self):
         if not self.user_has_groups(
@@ -86,10 +120,28 @@ class TourismProvider(models.Model):
         ):
             raise AccessError(_("No tiene permisos para ejecutar esta acción."))
 
+    def _is_profile_complete(self):
+        self.ensure_one()
+        required_fields = [
+            self.name,
+            self.responsible_name,
+            self.phone,
+            self.description,
+            self.category_id,
+            self.street,
+            self.schedule,
+            self.services_description,
+            self.profile_image_1920,
+            self.cover_image_1920,
+        ]
+        return all(required_fields)
+
     def action_submit_for_review(self):
         for rec in self:
-            if not rec.terms_accepted:
-                raise UserError(_("Debe aceptar términos para enviar a revisión."))
+            if not rec.email_confirmed:
+                raise UserError(_("Debes confirmar tu correo antes de enviar tu perfil a revisión."))
+            if not rec._is_profile_complete():
+                raise UserError(_("Completa tu perfil antes de enviarlo a revisión."))
             rec.write(
                 {
                     "state": "pending",
@@ -97,13 +149,13 @@ class TourismProvider(models.Model):
                     "review_user_id": self.env.user.id,
                     "review_date": fields.Datetime.now(),
                     "rejection_reason": False,
+                    "terms_accepted": True,
                 }
             )
             rec.message_post(body=_("Solicitud enviada a revisión."))
         return True
 
     def action_submit_review(self):
-        """Compatibilidad con vistas que usan el nombre corto del botón."""
         return self.action_submit_for_review()
 
     def action_approve(self):
@@ -154,8 +206,30 @@ class TourismProvider(models.Model):
         return True
 
     def action_back_to_draft(self):
-        self.write({"state": "draft", "is_published": False, "rejection_reason": False})
+        self.write({"state": "incomplete", "is_published": False, "rejection_reason": False})
         return True
+
+    def regenerate_confirmation_token(self):
+        for rec in self:
+            rec.write(
+                {
+                    "confirmation_token": secrets.token_urlsafe(32),
+                    "confirmation_sent_date": fields.Datetime.now(),
+                }
+            )
+
+    def get_confirmation_url(self):
+        self.ensure_one()
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        return f"{base_url}/turismo/confirmar/{self.confirmation_token}"
+
+    def action_send_confirmation_email(self):
+        template = self.env.ref("tourism_provider_portal.mail_template_tourism_provider_confirmation", raise_if_not_found=False)
+        for rec in self:
+            if not rec.confirmation_token:
+                rec.regenerate_confirmation_token()
+            if template:
+                template.sudo().send_mail(rec.id, force_send=True)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -164,6 +238,15 @@ class TourismProvider(models.Model):
             rec.message_post(body=_("Nuevo prestador registrado. Estado inicial: %s") % (rec.state,))
         return records
 
+    @api.constrains("signup_email")
+    def _check_signup_email(self):
+        for rec in self:
+            if not rec.signup_email:
+                continue
+            login_exists = self.env["res.users"].sudo().search_count([("login", "=", rec.signup_email), ("id", "!=", rec.portal_user_id.id)])
+            if login_exists:
+                raise ValidationError(_("Este correo ya está vinculado a otra cuenta."))
+
     def write(self, vals):
         tracked_fields = {
             "name",
@@ -171,7 +254,6 @@ class TourismProvider(models.Model):
             "category_id",
             "description",
             "phone",
-            "whatsapp",
             "email",
             "street",
             "location_reference",
@@ -192,7 +274,7 @@ class TourismProvider(models.Model):
         res = super().write(vals)
         for rec in self:
             if force_revalidation and rec.state in ("approved", "published"):
-                rec.write({"state": "pending", "is_published": False})
+                super(TourismProvider, rec).write({"state": "pending", "is_published": False})
                 rec.message_post(
                     body=_(
                         "Se detectaron cambios posteriores a aprobación/publicación. "

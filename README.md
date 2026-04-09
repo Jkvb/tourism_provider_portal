@@ -1,34 +1,46 @@
 # tourism_provider_portal
 
-Módulo Odoo para registro, validación y publicación de prestadores turísticos municipales.
+Módulo Odoo 19 para gestionar prestadores turísticos con experiencia **web-first**.
 
-## Flujo ultra simple de registro
+## Flujo implementado
 
-Ahora el alta es mínima:
+1. **Registro ultra simple** en `/turismo/registro` (solo correo + confirmar correo).
+2. Se crea usuario portal inactivo + perfil mínimo `tourism.provider` en estado `incomplete`.
+3. Se envía correo de confirmación con token único.
+4. Confirmación en `/turismo/confirmar/<token>` activa la cuenta y dispara email de seteo de contraseña.
+5. El prestador entra a `/my/turismo/perfil` para completar onboarding frontend.
+6. Puede enviar a revisión cuando el perfil esté completo.
+7. Admin/validador aprueban y publican.
+8. Perfil público visual en `/turismo/prestador/<slug>` con portada, avatar y feed de posts.
 
-1. Iniciar sesión en Odoo (puede ser con Google/Facebook si esos proveedores están configurados en tu login de Odoo).
-2. Entrar a `/turismo/registro`.
-3. Escribir únicamente **por qué quieres una cuenta**.
-4. Enviar solicitud.
+## Estados recomendados
 
-No se piden más datos durante el registro inicial.
+- `incomplete`: cuenta creada, perfil incompleto.
+- `pending`: listo para revisión.
+- `approved`: aprobado internamente.
+- `published`: visible públicamente.
+- `rejected` / `unpublished`: control editorial.
 
-## Aprobación antes de editar/publicar
+## Seguridad
 
-Después de solicitar cuenta, el perfil queda en `pending` y:
+- Portal solo puede editar su propio perfil.
+- Portal solo puede crear/editar/eliminar sus propios posts.
+- Público solo ve perfiles publicados.
+- Público solo ve posts publicados de perfiles publicados.
 
-- **No** puede editar portada/foto de perfil.
-- **No** puede crear publicaciones.
+## Limpieza de canales externos
 
-Cuando un validador aprueba la cuenta, entonces se habilita el panel frontend para:
+El módulo quedó 100% centrado en la experiencia web del portal.
 
-- Foto de perfil
-- Foto de portada
-- Edición de perfil
-- Publicaciones (texto + imagen)
+## Actualización del módulo
 
-## Notas técnicas
+```bash
+odoo -d <db> -u tourism_provider_portal --stop-after-init
+```
 
-- La solicitud toma automáticamente el nombre/correo/teléfono del usuario autenticado.
-- Se asigna por defecto la primera categoría activa disponible.
-- Se añadió corrección de esquema para `tourism.provider.post.body` con `NOT NULL`.
+## Notas de migración
+
+- Se agregaron campos de confirmación de correo: `signup_email`, `email_confirmed`, `confirmation_token`, `confirmation_sent_date`, `confirmation_date`.
+- `name`, `responsible_name` y `category_id` en `tourism.provider` dejaron de ser obligatorios al crear registro mínimo.
+- Nuevo estado `incomplete`.
+- Se agregó dependencia `auth_signup` para flujo de activación/reset password.
