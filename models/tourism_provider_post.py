@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 class TourismProviderPost(models.Model):
@@ -13,7 +14,14 @@ class TourismProviderPost(models.Model):
     is_published = fields.Boolean(default=True)
     create_date = fields.Datetime(readonly=True)
 
+    @api.constrains("provider_id", "author_user_id")
+    def _check_post_owner(self):
+        for rec in self:
+            if rec.author_user_id != rec.provider_id.portal_user_id and not self.env.user.has_group(
+                "tourism_provider_portal.group_tourism_admin"
+            ):
+                raise AccessError(_("Solo el dueño del perfil puede crear publicaciones."))
+
     def init(self):
-        # Corrige instalaciones previas donde la columna se creó sin NOT NULL.
         self._cr.execute("UPDATE tourism_provider_post SET body = '' WHERE body IS NULL")
         self._cr.execute("ALTER TABLE tourism_provider_post ALTER COLUMN body SET NOT NULL")

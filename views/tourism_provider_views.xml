@@ -7,12 +7,13 @@
             <search string="Buscar prestadores">
                 <field name="name"/>
                 <field name="responsible_name"/>
+                <field name="signup_email"/>
                 <field name="category_id"/>
                 <separator/>
+                <filter string="Incompletos" name="incomplete" domain="[('state','=','incomplete')]"/>
                 <filter string="Pendientes" name="pending" domain="[('state','=','pending')]"/>
                 <filter string="Aprobados" name="approved" domain="[('state','=','approved')]"/>
                 <filter string="Publicados" name="published" domain="[('state','=','published')]"/>
-                <filter string="Rechazados" name="rejected" domain="[('state','=','rejected')]"/>
                 <separator/>
                 <filter string="Agrupar por categoría" name="group_by_category" context="{'group_by': 'category_id'}"/>
                 <filter string="Agrupar por estado" name="group_by_state" context="{'group_by': 'state'}"/>
@@ -26,43 +27,13 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="signup_email"/>
                 <field name="category_id"/>
-                <field name="responsible_name"/>
-                <field name="phone"/>
-                <field name="email"/>
                 <field name="state"/>
-                <field name="is_published"/>
+                <field name="email_confirmed"/>
+                <field name="profile_completion"/>
                 <field name="review_date"/>
             </list>
-        </field>
-    </record>
-
-    <record id="view_tourism_provider_kanban" model="ir.ui.view">
-        <field name="name">tourism.provider.kanban</field>
-        <field name="model">tourism.provider</field>
-        <field name="arch" type="xml">
-            <kanban class="o_kanban_small_column">
-                <field name="image_1920"/>
-                <field name="name"/>
-                <field name="category_id"/>
-                <field name="state"/>
-                <field name="city"/>
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click o_kanban_record">
-                            <div class="o_kanban_image">
-                                <img t-att-src="kanban_image('tourism.provider', 'image_1920', record.id.raw_value)" alt="provider"/>
-                            </div>
-                            <div class="o_kanban_details">
-                                <strong><field name="name"/></strong>
-                                <div><field name="category_id"/></div>
-                                <div><field name="city"/></div>
-                                <div class="mt-2"><field name="state" widget="badge"/></div>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
         </field>
     </record>
 
@@ -72,75 +43,61 @@
         <field name="arch" type="xml">
             <form string="Prestador turístico">
                 <header>
-                    <button name="action_submit_review" type="object" string="Enviar a revisión" class="btn-primary" invisible="state not in ('draft','rejected','unpublished')"/>
+                    <button name="action_submit_review" type="object" string="Enviar a revisión" class="btn-primary" invisible="state not in ('incomplete','draft','rejected','unpublished')"/>
                     <button name="action_approve" type="object" string="Aprobar" class="btn-success" invisible="state != 'pending'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
                     <button name="action_reject" type="object" string="Rechazar" class="btn-danger" invisible="state != 'pending'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
                     <button name="action_publish" type="object" string="Publicar" class="btn-success" invisible="state != 'approved'" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
                     <button name="action_unpublish" type="object" string="Despublicar" class="btn-secondary" invisible="state not in ('published','approved')" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
-                    <button name="action_back_to_draft" type="object" string="Borrador" invisible="state == 'draft'"/>
-                    <button name="open_public_website" type="object" string="Ver ficha pública" invisible="state != 'published'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected,published,unpublished"/>
+                    <field name="state" widget="statusbar" statusbar_visible="incomplete,pending,approved,published"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <label for="name"/>
-                        <h1><field name="name"/></h1>
+                        <h1><field name="name" placeholder="Nombre del negocio"/></h1>
                     </div>
                     <group>
                         <group>
+                            <field name="signup_email"/>
+                            <field name="email"/>
+                            <field name="email_confirmed" readonly="1"/>
+                            <field name="portal_user_id"/>
                             <field name="category_id"/>
                             <field name="responsible_name"/>
-                            <field name="portal_user_id"/>
-                            <field name="terms_accepted"/>
+                            <field name="phone"/>
                         </group>
                         <group>
                             <field name="image_1920" widget="image"/>
                             <field name="profile_image_1920" widget="image"/>
                             <field name="cover_image_1920" widget="image"/>
                             <field name="website_slug" readonly="1"/>
+                            <field name="profile_completion" readonly="1"/>
                             <field name="is_published" readonly="1"/>
                         </group>
                     </group>
 
                     <notebook>
-                        <page string="Información general">
+                        <page string="Perfil">
                             <group>
                                 <field name="description" widget="html"/>
                                 <field name="services_description"/>
                                 <field name="schedule"/>
                             </group>
                         </page>
-                        <page string="Contacto">
+                        <page string="Contacto y redes">
                             <group>
-                                <group>
-                                    <field name="phone"/>
-                                    <field name="whatsapp"/>
-                                    <field name="email"/>
-                                </group>
                                 <group>
                                     <field name="street"/>
                                     <field name="location_reference"/>
                                     <field name="city"/>
                                     <field name="state_id"/>
                                 </group>
+                                <group>
+                                    <field name="facebook_url"/>
+                                    <field name="instagram_url"/>
+                                    <field name="tiktok_url"/>
+                                    <field name="website_url"/>
+                                </group>
                             </group>
-                        </page>
-                        <page string="Redes sociales">
-                            <group>
-                                <field name="facebook_url"/>
-                                <field name="instagram_url"/>
-                                <field name="tiktok_url"/>
-                                <field name="website_url"/>
-                            </group>
-                        </page>
-                        <page string="Galería">
-                            <field name="gallery_image_ids" context="{'default_provider_id': id}">
-                                <list editable="bottom">
-                                    <field name="sequence"/>
-                                    <field name="name"/>
-                                    <field name="image_1920" widget="image"/>
-                                </list>
-                            </field>
                         </page>
                         <page string="Publicaciones">
                             <field name="post_ids" context="{'default_provider_id': id}">
@@ -164,12 +121,6 @@
                                 <field name="approval_date" readonly="1"/>
                             </group>
                         </page>
-                        <page string="Publicación">
-                            <group>
-                                <field name="is_published" readonly="1"/>
-                                <field name="website_slug" readonly="1"/>
-                            </group>
-                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -180,14 +131,14 @@
     <record id="action_tourism_provider" model="ir.actions.act_window">
         <field name="name">Prestadores</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
 
     <record id="action_tourism_provider_pending" model="ir.actions.act_window">
         <field name="name">Solicitudes pendientes</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','pending')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
@@ -195,7 +146,7 @@
     <record id="action_tourism_provider_published" model="ir.actions.act_window">
         <field name="name">Publicados</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','published')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>
@@ -203,7 +154,7 @@
     <record id="action_tourism_provider_rejected" model="ir.actions.act_window">
         <field name="name">Rechazados</field>
         <field name="res_model">tourism.provider</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','rejected')]</field>
         <field name="search_view_id" ref="view_tourism_provider_search"/>
     </record>

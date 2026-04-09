@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_tourism_provider_confirmation" model="mail.template">
+        <field name="name">Turismo: confirmar correo</field>
+        <field name="model_id" ref="model_tourism_provider"/>
+        <field name="subject">Confirma tu cuenta de prestador turístico</field>
+        <field name="email_from">{{ (user.email_formatted or 'noreply@localhost') }}</field>
+        <field name="email_to">{{ object.signup_email }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5;">
+                <h2 style="margin-bottom:16px;">Confirma tu correo</h2>
+                <p>Hola,</p>
+                <p>Gracias por iniciar tu registro como prestador turístico. Para activar tu cuenta, confirma tu correo aquí:</p>
+                <p>
+                    <a t-att-href="object.get_confirmation_url()" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">Confirmar correo</a>
+                </p>
+                <p>Si no solicitaste esta cuenta, puedes ignorar este mensaje.</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>
