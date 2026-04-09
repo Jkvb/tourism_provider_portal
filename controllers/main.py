@@ -69,38 +69,42 @@ class TourismPortalController(http.Controller):
                 "error": False,
                 "success": False,
                 "register_url": "/turismo/registro",
+                "needs_login": request.env.user._is_public(),
             },
         )
 
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def tourism_register_submit(self, **post):
-        required_fields = ["name", "phone", "email", "description"]
-        missing = [field for field in required_fields if not post.get(field)]
-        category_id = self._default_category_id()
+        if request.env.user._is_public():
+            return request.redirect("/web/login?redirect=/turismo/registro")
 
-        if missing or not category_id:
+        reason = (post.get("description") or "").strip()
+        category_id = self._default_category_id()
+        if not reason or not category_id:
             return request.render(
                 "tourism_provider_portal.tourism_provider_register",
                 {
                     "form_values": post,
-                    "error": "Completa nombre de perfil, número, correo y descripción.",
+                    "error": "Solo necesitamos que nos cuentes por qué quieres una cuenta.",
                     "success": False,
                     "register_url": "/turismo/registro",
+                    "needs_login": False,
                 },
             )
 
+        user = request.env.user
         vals = {
-            "name": post.get("name"),
-            "responsible_name": post.get("name"),
+            "name": user.name,
+            "responsible_name": user.name,
             "category_id": category_id,
-            "description": post.get("description"),
-            "services_description": post.get("description"),
-            "phone": post.get("phone"),
-            "email": post.get("email"),
+            "description": reason,
+            "services_description": reason,
+            "phone": user.partner_id.phone or user.partner_id.mobile,
+            "email": user.partner_id.email,
             "state": "pending",
             "is_published": False,
             "terms_accepted": True,
-            "portal_user_id": request.env.user.id if request.env.user and not request.env.user._is_public() else False,
+            "portal_user_id": user.id,
         }
 
         provider = request.env["tourism.provider"].sudo().create(vals)
@@ -123,8 +127,9 @@ class TourismPortalController(http.Controller):
             {
                 "form_values": {},
                 "error": False,
-                "success": "Registro enviado. Si iniciaste sesión, ya puedes entrar a tu panel para subir portada/perfil y publicar.",
+                "success": "Solicitud enviada. Cuando tu cuenta sea aprobada podrás editar perfil y publicar.",
                 "register_url": "/turismo/registro",
+                "needs_login": False,
             },
         )
 
@@ -144,6 +149,8 @@ class TourismPortalController(http.Controller):
         provider = request.env["tourism.provider"].sudo().browse(provider_id)
         if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
             return request.not_found()
+        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
+        can_manage_profile = provider.state in ("approved", "published")
         return request.render(
             "tourism_provider_portal.tourism_portal_provider_edit",
             {
@@ -151,6 +158,7 @@ class TourismPortalController(http.Controller):
                 "categories": categories,
                 "error": False,
                 "success": False,
+                "can_manage_profile": can_manage_profile,
             },
         )
 
@@ -159,6 +167,20 @@ class TourismPortalController(http.Controller):
         provider = request.env["tourism.provider"].sudo().browse(provider_id)
         if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
             return request.not_found()
+
+        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
+        if provider.state not in ("approved", "published"):
+            return request.render(
+                "tourism_provider_portal.tourism_portal_provider_edit",
+                {
+                    "provider": provider,
+                    "categories": categories,
+                    "error": "Tu cuenta aún no está aprobada. No puedes editar perfil todavía.",
+                    "success": False,
+                    "can_manage_profile": False,
+                },
+            )
+
         vals = {
             "name": post.get("name"),
             "responsible_name": post.get("name") or provider.responsible_name,
@@ -178,7 +200,6 @@ class TourismPortalController(http.Controller):
             vals["cover_image_1920"] = base64.b64encode(cover_image.read())
 
         provider.write(vals)
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
         return request.render(
             "tourism_provider_portal.tourism_portal_provider_edit",
             {
@@ -186,6 +207,7 @@ class TourismPortalController(http.Controller):
                 "categories": categories,
                 "error": False,
                 "success": "Perfil actualizado. Tus cambios se enviaron a revisión.",
+                "can_manage_profile": False,
             },
         )
 
@@ -194,6 +216,9 @@ class TourismPortalController(http.Controller):
         provider = request.env["tourism.provider"].sudo().browse(provider_id)
         if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
             return request.not_found()
+
+        if provider.state not in ("approved", "published"):
+            return request.redirect(f"/my/turismo/prestador/{provider.id}")
 
         body = (post.get("body") or "").strip()
         if not body:

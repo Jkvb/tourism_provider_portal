@@ -16,7 +16,7 @@
                             <div class="col-lg-5 mt-4 mt-lg-0">
                                 <div class="tp-hero-card p-4">
                                     <h5 class="fw-bold">Alta rápida</h5>
-                                    <p class="mb-2">Solo pedimos: nombre de perfil, número, correo y descripción.</p>
+                                    <p class="mb-2">Inicia sesión y explica por qué quieres la cuenta.</p>
                                     <code>/turismo/registro</code>
                                 </div>
                             </div>
@@ -157,14 +157,6 @@
                             </div>
                         </div>
 
-                        <div class="card shadow-sm border-0 mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">Actualizar por chatbot</h5>
-                                <p class="text-muted">¿Eres el propietario? Solicita cambios directamente por el chatbot oficial.</p>
-                                <a class="btn btn-success w-100" t-att-href="whatsapp_update_url" target="_blank" rel="noopener">Actualizar por WhatsApp</a>
-                            </div>
-                        </div>
-
                         <div class="card shadow-sm border-0">
                             <div class="card-body">
                                 <h5 class="mb-3">Galería</h5>
@@ -188,28 +180,25 @@
             <div class="container py-5">
                 <div class="row justify-content-center">
                     <div class="col-lg-8">
-                        <h1 class="h2 mb-2">Registro rápido de perfil</h1>
-                        <p class="text-muted mb-4">Solo necesitamos 4 datos para crear tu perfil inicial.</p>
+                        <h1 class="h2 mb-2">Solicitar cuenta de prestador</h1>
+                        <p class="text-muted mb-4">Registro super simple: inicia sesión con tu cuenta (Google/Facebook desde Odoo Login) y escribe por qué quieres la cuenta.</p>
                         <div t-if="error" class="alert alert-danger" t-esc="error"/>
                         <div t-if="success" class="alert alert-success" t-esc="success"/>
-                        <form action="/turismo/registro" method="post" class="card p-4 shadow-sm border-0 tp-form">
+
+                        <div t-if="needs_login" class="card p-4 shadow-sm border-0">
+                            <p class="mb-3">Primero inicia sesión para solicitar tu cuenta.</p>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-primary" href="/web/login?redirect=/turismo/registro">Entrar con mi cuenta</a>
+                                <a class="btn btn-outline-primary" href="/web/signup?redirect=/turismo/registro">Crear cuenta</a>
+                            </div>
+                        </div>
+
+                        <form t-if="not needs_login" action="/turismo/registro" method="post" class="card p-4 shadow-sm border-0 tp-form">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label>Nombre del perfil *</label>
-                                    <input class="form-control" type="text" name="name" t-att-value="form_values.get('name','')" required="required"/>
-                                </div>
-                                <div class="col-md-6">
-                                    <label>Número de contacto *</label>
-                                    <input class="form-control" type="text" name="phone" t-att-value="form_values.get('phone','')" required="required"/>
-                                </div>
                                 <div class="col-md-12">
-                                    <label>Correo *</label>
-                                    <input class="form-control" type="email" name="email" t-att-value="form_values.get('email','')" required="required"/>
-                                </div>
-                                <div class="col-md-12">
-                                    <label>Descripción de la petición *</label>
-                                    <textarea class="form-control" name="description" rows="4" required="required"><t t-esc="form_values.get('description','')"/></textarea>
+                                    <label>¿Por qué quieres una cuenta? *</label>
+                                    <textarea class="form-control" name="description" rows="5" required="required"><t t-esc="form_values.get('description','')"/></textarea>
                                 </div>
                             </div>
                             <button class="btn btn-primary mt-4" type="submit">Crear perfil</button>
@@ -251,9 +240,12 @@
         <t t-call="website.layout">
             <div class="container py-5">
                 <h1 class="h3 mb-3">Mi perfil turístico</h1>
-                <p class="text-muted">Estilo red social: sube portada y foto de perfil, luego publica novedades.</p>
+                <p class="text-muted">Podrás administrar portada, foto y publicaciones cuando tu solicitud esté aprobada.</p>
                 <div t-if="error" class="alert alert-danger" t-esc="error"/>
                 <div t-if="success" class="alert alert-success" t-esc="success"/>
+                <div t-if="not can_manage_profile" class="alert alert-warning">
+                    Tu cuenta aún está en revisión (<strong t-esc="provider.state"/>). Cuando esté aprobada se habilitarán edición y publicaciones.
+                </div>
 
                 <section class="tp-cover position-relative rounded-4 overflow-hidden mb-4">
                     <img t-if="provider.cover_image_1920" t-att-src="image_data_uri(provider.cover_image_1920)" class="w-100 h-100 tp-cover-image" alt="Portada"/>
@@ -272,7 +264,7 @@
                     </div>
                 </section>
 
-                <div class="row g-4">
+                <div class="row g-4" t-if="can_manage_profile">
                     <div class="col-lg-7">
                         <form t-attf-action="/my/turismo/prestador/#{provider.id}" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm border-0">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>

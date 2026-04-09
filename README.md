@@ -2,41 +2,33 @@
 
 Módulo Odoo para registro, validación y publicación de prestadores turísticos municipales.
 
-## Flujo simplificado solicitado
+## Flujo ultra simple de registro
 
-Se simplificó el proceso para que el registro sea rápido desde frontend:
+Ahora el alta es mínima:
 
-1. **Nombre del perfil**
-2. **Número de contacto**
-3. **Correo**
-4. **Descripción de la petición**
+1. Iniciar sesión en Odoo (puede ser con Google/Facebook si esos proveedores están configurados en tu login de Odoo).
+2. Entrar a `/turismo/registro`.
+3. Escribir únicamente **por qué quieres una cuenta**.
+4. Enviar solicitud.
 
-Con eso se crea un registro en estado **pendiente de revisión**.
+No se piden más datos durante el registro inicial.
 
-## ¿Qué pasa después del registro?
+## Aprobación antes de editar/publicar
 
-Una vez registrado (y con sesión iniciada), el usuario tiene un panel frontend tipo red social en:
+Después de solicitar cuenta, el perfil queda en `pending` y:
 
-- `/my/turismo/prestadores`
-- `/my/turismo/prestador/<id>`
+- **No** puede editar portada/foto de perfil.
+- **No** puede crear publicaciones.
 
-En ese panel puede:
+Cuando un validador aprueba la cuenta, entonces se habilita el panel frontend para:
 
-- Subir **foto de perfil**.
-- Subir **foto de portada**.
-- Editar datos básicos del perfil.
-- Crear publicaciones (texto + imagen) de forma rápida.
+- Foto de perfil
+- Foto de portada
+- Edición de perfil
+- Publicaciones (texto + imagen)
 
-## Comportamiento funcional
+## Notas técnicas
 
-- Se eliminó la dependencia del flujo por WhatsApp chatbot.
-- El alta rápida usa categoría por defecto (la primera categoría activa disponible).
-- Las modificaciones del perfil se vuelven a enviar a revisión (`pending`) para control administrativo.
-- Las publicaciones se crean desde frontend del prestador autenticado.
-
-## Prueba rápida
-
-1. Abrir `/turismo/registro` y completar los 4 campos.
-2. Iniciar sesión con el usuario vinculado al prestador.
-3. Ir a `/my/turismo/prestadores` y abrir el perfil.
-4. Subir portada/foto de perfil y crear una publicación.
+- La solicitud toma automáticamente el nombre/correo/teléfono del usuario autenticado.
+- Se asigna por defecto la primera categoría activa disponible.
+- Se añadió corrección de esquema para `tourism.provider.post.body` con `NOT NULL`.
