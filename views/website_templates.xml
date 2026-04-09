@@ -157,6 +157,14 @@
                             </div>
                         </div>
 
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">Actualizar por chatbot</h5>
+                                <p class="text-muted">¿Eres el propietario? Solicita cambios directamente por el chatbot oficial.</p>
+                                <a class="btn btn-success w-100" t-att-href="whatsapp_update_url" target="_blank" rel="noopener">Actualizar por WhatsApp</a>
+                            </div>
+                        </div>
+
                         <div class="card shadow-sm border-0">
                             <div class="card-body">
                                 <h5 class="mb-3">Galería</h5>

@@ -1,6 +1,7 @@
 import base64
+from urllib.parse import quote
 
-from odoo import http
+from odoo import _, http
 from odoo.http import request
 
 
@@ -33,6 +34,7 @@ class TourismPortalController(http.Controller):
             "selected_category": category_id,
             "search": search or "",
             "register_url": "/turismo/registro",
+            "whatsapp_register_url": self._build_whatsapp_chatbot_url(self._chatbot_message("register")),
         }
         return request.render("tourism_provider_portal.tourism_home", values)
 
@@ -52,6 +54,9 @@ class TourismPortalController(http.Controller):
                 "provider": provider,
                 "register_url": "/turismo/registro",
                 "can_publish_post": can_publish_post,
+                "whatsapp_update_url": self._build_whatsapp_chatbot_url(
+                    self._chatbot_message("update", provider=provider)
+                ),
             },
         )
 
@@ -128,7 +133,10 @@ class TourismPortalController(http.Controller):
         providers = request.env["tourism.provider"].sudo().search([("portal_user_id", "=", request.env.user.id)])
         return request.render(
             "tourism_provider_portal.tourism_portal_my_providers",
-            {"providers": providers},
+            {
+                "providers": providers,
+                "whatsapp_register_url": self._build_whatsapp_chatbot_url(self._chatbot_message("register")),
+            },
         )
 
     @http.route(["/my/turismo/prestador/<int:provider_id>"], type="http", auth="user", website=True, methods=["GET"])
@@ -136,7 +144,6 @@ class TourismPortalController(http.Controller):
         provider = request.env["tourism.provider"].sudo().browse(provider_id)
         if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
             return request.not_found()
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
         return request.render(
             "tourism_provider_portal.tourism_portal_provider_edit",
             {
