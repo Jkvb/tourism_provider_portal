@@ -30,8 +30,11 @@ class TourismProvider(models.Model):
 
     schedule = fields.Text(string="Horarios")
     services_description = fields.Text(string="Servicios que ofrece")
-    image_1920 = fields.Image()
+    image_1920 = fields.Image(string="Imagen principal")
+    profile_image_1920 = fields.Image(string="Foto de perfil")
+    cover_image_1920 = fields.Image(string="Foto de portada")
     gallery_image_ids = fields.One2many("tourism.provider.image", "provider_id", string="Galería")
+    post_ids = fields.One2many("tourism.provider.post", "provider_id", string="Publicaciones")
 
     state = fields.Selection(
         [
@@ -182,6 +185,8 @@ class TourismProvider(models.Model):
             "services_description",
             "image_1920",
             "gallery_image_ids",
+            "profile_image_1920",
+            "cover_image_1920",
         }
         force_revalidation = bool(tracked_fields.intersection(vals.keys()))
         res = super().write(vals)

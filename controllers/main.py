@@ -39,9 +39,18 @@ class TourismPortalController(http.Controller):
         )
         if not provider:
             return request.not_found()
+        can_publish_post = (
+            not request.env.user._is_public()
+            and provider.portal_user_id.id == request.env.user.id
+            and provider.state == "published"
+        )
         return request.render(
             "tourism_provider_portal.tourism_provider_detail",
-            {"provider": provider, "register_url": "/turismo/registro"},
+            {
+                "provider": provider,
+                "register_url": "/turismo/registro",
+                "can_publish_post": can_publish_post,
+            },
         )
 
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["GET"])
@@ -106,6 +115,14 @@ class TourismPortalController(http.Controller):
         main_image = post.get("image_1920")
         if main_image and getattr(main_image, "filename", False):
             vals["image_1920"] = base64.b64encode(main_image.read())
+
+        profile_image = post.get("profile_image_1920")
+        if profile_image and getattr(profile_image, "filename", False):
+            vals["profile_image_1920"] = base64.b64encode(profile_image.read())
+
+        cover_image = post.get("cover_image_1920")
+        if cover_image and getattr(cover_image, "filename", False):
+            vals["cover_image_1920"] = base64.b64encode(cover_image.read())
 
         provider = request.env["tourism.provider"].sudo().create(vals)
 
@@ -192,6 +209,14 @@ class TourismPortalController(http.Controller):
             "state": "pending",
             "is_published": False,
         }
+        profile_image = post.get("profile_image_1920")
+        if profile_image and getattr(profile_image, "filename", False):
+            vals["profile_image_1920"] = base64.b64encode(profile_image.read())
+
+        cover_image = post.get("cover_image_1920")
+        if cover_image and getattr(cover_image, "filename", False):
+            vals["cover_image_1920"] = base64.b64encode(cover_image.read())
+
         provider.write(vals)
         categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
         return request.render(
@@ -203,3 +228,27 @@ class TourismPortalController(http.Controller):
                 "success": "Cambios guardados y reenviados a revisión.",
             },
         )
+
+
+    @http.route(["/my/turismo/prestador/<int:provider_id>/post"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
+    def my_tourism_provider_post_create(self, provider_id, **post):
+        provider = request.env["tourism.provider"].sudo().browse(provider_id)
+        if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
+            return request.not_found()
+
+        body = (post.get("body") or "").strip()
+        if not body:
+            return request.redirect(f"/turismo/prestador/{provider.website_slug}")
+
+        vals = {
+            "provider_id": provider.id,
+            "author_user_id": request.env.user.id,
+            "body": body,
+            "is_published": True,
+        }
+        post_image = post.get("post_image")
+        if post_image and getattr(post_image, "filename", False):
+            vals["image_1920"] = base64.b64encode(post_image.read())
+
+        request.env["tourism.provider.post"].sudo().create(vals)
+        return request.redirect(f"/turismo/prestador/{provider.website_slug}")
