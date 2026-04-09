@@ -230,6 +230,39 @@
                             <p t-if="not posts" class="text-muted mb-0">Aún no tienes publicaciones.</p>
                         </div>
                     </div>
+                </section>
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">Acerca de</h5>
+                                <div t-if="provider.description" t-out="provider.description"/>
+                                <p t-if="not provider.description" class="text-muted mb-0">Este prestador aún no agrega descripción.</p>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3">Publicaciones</h5>
+                        <t t-foreach="posts" t-as="post">
+                            <article class="tp-post-card mb-3">
+                                <p class="mb-2" t-esc="post.body"/>
+                                <img t-if="post.image_1920" t-att-src="image_data_uri(post.image_1920)" class="img-fluid rounded-3 mb-2" alt="Imagen de publicación"/>
+                                <small class="text-muted" t-esc="post.create_date"/>
+                            </article>
+                        </t>
+                        <p t-if="not posts" class="text-muted">Aún no hay publicaciones.</p>
+                    </div>
+
+                    <aside class="col-lg-4">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">Contacto</h5>
+                                <p class="mb-1"><strong>Tel:</strong> <span t-esc="provider.phone or 'No disponible'"/></p>
+                                <p class="mb-1"><strong>Correo:</strong> <span t-esc="provider.email or provider.signup_email or 'No disponible'"/></p>
+                                <p class="mb-1"><strong>Dirección:</strong> <span t-esc="provider.street or 'No disponible'"/></p>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </t>
