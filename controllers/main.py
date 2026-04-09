@@ -113,7 +113,7 @@ class TourismPortalController(http.Controller):
                     "login": email,
                     "email": email,
                     "active": False,
-                    "groups_id": [(6, 0, [portal_group.id])],
+                    "groups_ids": [(6, 0, [portal_group.id])],
                 }
             )
         )
