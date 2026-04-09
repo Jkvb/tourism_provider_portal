@@ -12,3 +12,8 @@ class TourismProviderPost(models.Model):
     image_1920 = fields.Image()
     is_published = fields.Boolean(default=True)
     create_date = fields.Datetime(readonly=True)
+
+    def init(self):
+        # Corrige instalaciones previas donde la columna se creó sin NOT NULL.
+        self._cr.execute("UPDATE tourism_provider_post SET body = '' WHERE body IS NULL")
+        self._cr.execute("ALTER TABLE tourism_provider_post ALTER COLUMN body SET NOT NULL")
