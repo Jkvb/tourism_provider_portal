@@ -13,10 +13,54 @@
         <field name="name">Prestador portal: solo propios</field>
         <field name="model_id" ref="model_tourism_provider"/>
         <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
-        <field name="domain_force">[('portal_user_id', '=', user.id)]</field>
+        <field name="domain_force">['|', ('portal_user_id', '=', user.id), ('create_uid', '=', user.id)]</field>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="tourism_provider_public_rule_published_portal" model="ir.rule">
+        <field name="name">Prestador publicado visible (portal)</field>
+        <field name="model_id" ref="model_tourism_provider"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('state', '=', 'published'), ('is_published', '=', True)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="tourism_provider_public_rule_published_public" model="ir.rule">
+        <field name="name">Prestador publicado visible (público)</field>
+        <field name="model_id" ref="model_tourism_provider"/>
+        <field name="groups" eval="[(4, ref('base.group_public'))]"/>
+        <field name="domain_force">[('state', '=', 'published'), ('is_published', '=', True)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="tourism_provider_post_portal_rule_own" model="ir.rule">
+        <field name="name">Publicaciones portal: solo propias</field>
+        <field name="model_id" ref="model_tourism_provider_post"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('provider_id.portal_user_id', '=', user.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="tourism_provider_post_public_rule" model="ir.rule">
+        <field name="name">Publicaciones públicas de perfiles publicados</field>
+        <field name="model_id" ref="model_tourism_provider_post"/>
+        <field name="groups" eval="[(4, ref('base.group_public'))]"/>
+        <field name="domain_force">[('provider_id.state', '=', 'published'), ('provider_id.is_published', '=', True), ('is_published', '=', True)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
         <field name="perm_unlink" eval="False"/>
     </record>
 </odoo>
