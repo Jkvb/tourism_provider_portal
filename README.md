@@ -2,58 +2,41 @@
 
 Módulo Odoo para registro, validación y publicación de prestadores turísticos municipales.
 
-## Cambio funcional: registro y actualización por chatbot de WhatsApp
+## Flujo simplificado solicitado
 
-A partir de esta versión, **todo el alta y actualización de prestadores se hace por chatbot de WhatsApp**.
+Se simplificó el proceso para que el registro sea rápido desde frontend:
 
-- La ruta `/turismo/registro` ya no muestra formulario web; ahora redirige al flujo conversacional de WhatsApp.
-- En portal (`/my/turismo/prestadores`) las acciones de edición se canalizan por WhatsApp.
-- En el detalle público del prestador se agrega acceso directo para solicitar actualización por chatbot.
+1. **Nombre del perfil**
+2. **Número de contacto**
+3. **Correo**
+4. **Descripción de la petición**
 
-## Configurar el chatbot de WhatsApp
+Con eso se crea un registro en estado **pendiente de revisión**.
 
-El módulo construye enlaces `https://wa.me/...` con un mensaje inicial según el flujo (registro o actualización). Para configurarlo:
+## ¿Qué pasa después del registro?
 
-### 1) Activar modo desarrollador en Odoo
+Una vez registrado (y con sesión iniciada), el usuario tiene un panel frontend tipo red social en:
 
-1. Ir a **Ajustes**.
-2. En tu usuario, habilitar **Modo desarrollador**.
+- `/my/turismo/prestadores`
+- `/my/turismo/prestador/<id>`
 
-### 2) Definir número del chatbot (obligatorio)
+En ese panel puede:
 
-1. Ir a **Ajustes → Técnico → Parámetros del sistema**.
-2. Crear/editar el parámetro:
-   - **Clave:** `tourism_provider_portal.whatsapp_bot_phone`
-   - **Valor:** número en formato internacional (ejemplo México): `5213312345678`
+- Subir **foto de perfil**.
+- Subir **foto de portada**.
+- Editar datos básicos del perfil.
+- Crear publicaciones (texto + imagen) de forma rápida.
 
-> Recomendación: usa solo dígitos (sin `+`, espacios ni guiones). Si agregas caracteres, el módulo intentará limpiarlos automáticamente.
+## Comportamiento funcional
 
-### 3) Definir nombre del municipio para el mensaje inicial (opcional)
+- Se eliminó la dependencia del flujo por WhatsApp chatbot.
+- El alta rápida usa categoría por defecto (la primera categoría activa disponible).
+- Las modificaciones del perfil se vuelven a enviar a revisión (`pending`) para control administrativo.
+- Las publicaciones se crean desde frontend del prestador autenticado.
 
-1. En **Parámetros del sistema**, crear/editar:
-   - **Clave:** `tourism_provider_portal.chatbot_municipality_name`
-   - **Valor:** nombre a mostrar en el saludo (ejemplo: `Atemajac de Brizuela`)
+## Prueba rápida
 
-Si este parámetro no existe, el módulo usa `Atemajac de Brizuela` por defecto.
-
-## Prueba rápida de funcionamiento
-
-1. Abrir `/turismo/registro`.
-2. Presionar **Iniciar registro por WhatsApp**.
-3. Verificar que abre conversación hacia el número configurado y con texto precargado.
-4. Entrar a `/my/turismo/prestadores` y usar **Actualizar por WhatsApp** en un prestador.
-
-## Integración sugerida del bot
-
-Para operación real, conecta tu número de WhatsApp Business API con un bot (por ejemplo, Twilio + webhook, Meta Cloud API o proveedor BSP). El bot debería:
-
-1. Identificar intención (`REGISTRO` vs `ACTUALIZACIÓN`).
-2. Solicitar datos paso a paso (negocio, responsable, contacto, categoría, ubicación, servicios, medios).
-3. Recibir imágenes/documentos.
-4. Enviar la información a Odoo vía endpoint interno/API segura para crear o actualizar `tourism.provider`.
-5. Confirmar folio al usuario y notificar al equipo revisor.
-
-## Notas
-
-- Si no configuras `tourism_provider_portal.whatsapp_bot_phone`, el sistema abrirá `wa.me` sin número fijo.
-- El flujo de publicaciones (`novedades`) en perfil público se mantiene vía portal web.
+1. Abrir `/turismo/registro` y completar los 4 campos.
+2. Iniciar sesión con el usuario vinculado al prestador.
+3. Ir a `/my/turismo/prestadores` y abrir el perfil.
+4. Subir portada/foto de perfil y crear una publicación.

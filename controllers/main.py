@@ -9,36 +9,11 @@ class TourismPortalController(http.Controller):
     def _provider_base_domain(self):
         return [("state", "=", "published"), ("is_published", "=", True)]
 
-    def _get_whatsapp_bot_phone(self):
-        phone = request.env["ir.config_parameter"].sudo().get_param(
-            "tourism_provider_portal.whatsapp_bot_phone", default=""
-        )
-        return "".join(ch for ch in phone if ch.isdigit())
-
-    def _build_whatsapp_chatbot_url(self, message):
-        phone = self._get_whatsapp_bot_phone()
-        encoded = quote(message or "")
-        if phone:
-            return f"https://wa.me/{phone}?text={encoded}"
-        return f"https://wa.me/?text={encoded}"
-
-    def _chatbot_message(self, action, provider=None):
-        municipality = (
-            request.env["ir.config_parameter"].sudo().get_param(
-                "tourism_provider_portal.chatbot_municipality_name", default="Atemajac de Brizuela"
-            )
-        )
-        if action == "register":
-            return _(
-                "Hola, quiero REGISTRAR un prestador turístico en %(municipality)s. "
-                "Compárteme el flujo del chatbot para iniciar."
-            ) % {"municipality": municipality}
-        if action == "update" and provider:
-            return _(
-                "Hola, quiero ACTUALIZAR mi registro turístico. "
-                "Prestador: %(provider)s (ID: %(provider_id)s)."
-            ) % {"provider": provider.name, "provider_id": provider.id}
-        return _("Hola, necesito ayuda con el registro turístico.")
+    def _default_category_id(self):
+        category = request.env["tourism.provider.category"].sudo().search([("active", "=", True)], limit=1)
+        if not category:
+            category = request.env["tourism.provider.category"].sudo().search([], limit=1)
+        return category.id if category else False
 
     @http.route(["/turismo", "/turismo/prestadores"], type="http", auth="public", website=True, sitemap=True)
     def tourism_home(self, category_id=None, search=None, **kwargs):
@@ -72,11 +47,7 @@ class TourismPortalController(http.Controller):
         )
         if not provider:
             return request.not_found()
-        can_publish_post = (
-            not request.env.user._is_public()
-            and provider.portal_user_id.id == request.env.user.id
-            and provider.state == "published"
-        )
+        can_publish_post = not request.env.user._is_public() and provider.portal_user_id.id == request.env.user.id
         return request.render(
             "tourism_provider_portal.tourism_provider_detail",
             {
@@ -94,14 +65,68 @@ class TourismPortalController(http.Controller):
         return request.render(
             "tourism_provider_portal.tourism_provider_register",
             {
-                "whatsapp_url": self._build_whatsapp_chatbot_url(self._chatbot_message("register")),
+                "form_values": kwargs,
+                "error": False,
+                "success": False,
                 "register_url": "/turismo/registro",
             },
         )
 
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def tourism_register_submit(self, **post):
-        return request.redirect(self._build_whatsapp_chatbot_url(self._chatbot_message("register")))
+        required_fields = ["name", "phone", "email", "description"]
+        missing = [field for field in required_fields if not post.get(field)]
+        category_id = self._default_category_id()
+
+        if missing or not category_id:
+            return request.render(
+                "tourism_provider_portal.tourism_provider_register",
+                {
+                    "form_values": post,
+                    "error": "Completa nombre de perfil, número, correo y descripción.",
+                    "success": False,
+                    "register_url": "/turismo/registro",
+                },
+            )
+
+        vals = {
+            "name": post.get("name"),
+            "responsible_name": post.get("name"),
+            "category_id": category_id,
+            "description": post.get("description"),
+            "services_description": post.get("description"),
+            "phone": post.get("phone"),
+            "email": post.get("email"),
+            "state": "pending",
+            "is_published": False,
+            "terms_accepted": True,
+            "portal_user_id": request.env.user.id if request.env.user and not request.env.user._is_public() else False,
+        }
+
+        provider = request.env["tourism.provider"].sudo().create(vals)
+        provider.message_post(body="Solicitud rápida creada desde /turismo/registro")
+
+        validators = request.env.ref("tourism_provider_portal.group_tourism_validator").users
+        admins = request.env.ref("tourism_provider_portal.group_tourism_admin").users
+        users_to_notify = (validators | admins).filtered(lambda u: u.partner_id)
+        if users_to_notify:
+            provider.message_subscribe(partner_ids=users_to_notify.mapped("partner_id").ids)
+            provider.activity_schedule(
+                "mail.mail_activity_data_todo",
+                user_id=users_to_notify[0].id,
+                summary="Nueva solicitud rápida de prestador",
+                note=f"Se registró '{provider.name}' y está pendiente de revisión.",
+            )
+
+        return request.render(
+            "tourism_provider_portal.tourism_provider_register",
+            {
+                "form_values": {},
+                "error": False,
+                "success": "Registro enviado. Si iniciaste sesión, ya puedes entrar a tu panel para subir portada/perfil y publicar.",
+                "register_url": "/turismo/registro",
+            },
+        )
 
     @http.route("/my/turismo/prestadores", type="http", auth="user", website=True)
     def my_tourism_providers(self, **kwargs):
@@ -123,7 +148,9 @@ class TourismPortalController(http.Controller):
             "tourism_provider_portal.tourism_portal_provider_edit",
             {
                 "provider": provider,
-                "whatsapp_url": self._build_whatsapp_chatbot_url(self._chatbot_message("update", provider=provider)),
+                "categories": categories,
+                "error": False,
+                "success": False,
             },
         )
 
@@ -132,7 +159,35 @@ class TourismPortalController(http.Controller):
         provider = request.env["tourism.provider"].sudo().browse(provider_id)
         if not provider.exists() or provider.portal_user_id.id != request.env.user.id:
             return request.not_found()
-        return request.redirect(self._build_whatsapp_chatbot_url(self._chatbot_message("update", provider=provider)))
+        vals = {
+            "name": post.get("name"),
+            "responsible_name": post.get("name") or provider.responsible_name,
+            "phone": post.get("phone"),
+            "email": post.get("email"),
+            "description": post.get("description"),
+            "category_id": int(post.get("category_id")) if post.get("category_id") else provider.category_id.id,
+            "state": "pending",
+            "is_published": False,
+        }
+        profile_image = post.get("profile_image_1920")
+        if profile_image and getattr(profile_image, "filename", False):
+            vals["profile_image_1920"] = base64.b64encode(profile_image.read())
+
+        cover_image = post.get("cover_image_1920")
+        if cover_image and getattr(cover_image, "filename", False):
+            vals["cover_image_1920"] = base64.b64encode(cover_image.read())
+
+        provider.write(vals)
+        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
+        return request.render(
+            "tourism_provider_portal.tourism_portal_provider_edit",
+            {
+                "provider": provider,
+                "categories": categories,
+                "error": False,
+                "success": "Perfil actualizado. Tus cambios se enviaron a revisión.",
+            },
+        )
 
     @http.route(["/my/turismo/prestador/<int:provider_id>/post"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
     def my_tourism_provider_post_create(self, provider_id, **post):
@@ -142,7 +197,7 @@ class TourismPortalController(http.Controller):
 
         body = (post.get("body") or "").strip()
         if not body:
-            return request.redirect(f"/turismo/prestador/{provider.website_slug}")
+            return request.redirect(f"/my/turismo/prestador/{provider.id}")
 
         vals = {
             "provider_id": provider.id,
@@ -155,4 +210,4 @@ class TourismPortalController(http.Controller):
             vals["image_1920"] = base64.b64encode(post_image.read())
 
         request.env["tourism.provider.post"].sudo().create(vals)
-        return request.redirect(f"/turismo/prestador/{provider.website_slug}")
+        return request.redirect(f"/my/turismo/prestador/{provider.id}")
