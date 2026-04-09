@@ -11,12 +11,12 @@
                                 <h1 class="display-4 fw-bold mb-3">Descubre experiencias auténticas en la sierra.</h1>
                                 <p class="lead mb-4">Explora hospedaje, gastronomía, balnearios y servicios turísticos validados por el municipio.</p>
                                 <a class="btn btn-primary btn-lg me-2" href="/turismo/prestadores">Ver prestadores</a>
-                                <a class="btn btn-outline-light btn-lg" t-att-href="register_url">Registra tu negocio</a>
+                                <a class="btn btn-outline-light btn-lg" t-att-href="register_url">Registra tu perfil fácil</a>
                             </div>
                             <div class="col-lg-5 mt-4 mt-lg-0">
                                 <div class="tp-hero-card p-4">
-                                    <h5 class="fw-bold">Registro con QR</h5>
-                                    <p class="mb-2">Comparte esta URL para el flujo de alta:</p>
+                                    <h5 class="fw-bold">Alta rápida</h5>
+                                    <p class="mb-2">Solo pedimos: nombre de perfil, número, correo y descripción.</p>
                                     <code>/turismo/registro</code>
                                 </div>
                             </div>
@@ -63,8 +63,8 @@
                     <div class="container">
                         <div class="tp-register-strip p-4 p-md-5">
                             <h3 class="fw-bold mb-2">¿Eres prestador turístico?</h3>
-                            <p class="mb-3">Regístrate en minutos y solicita tu publicación oficial en el portal municipal.</p>
-                            <a class="btn btn-primary" t-att-href="register_url">Ir a registro</a>
+                            <p class="mb-3">Regístrate en minutos y después administra tu perfil con foto, portada y publicaciones.</p>
+                            <a class="btn btn-primary" t-att-href="register_url">Ir a registro rápido</a>
                         </div>
                     </div>
                 </section>
@@ -118,19 +118,12 @@
                             </div>
                         </div>
 
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">Servicios</h5>
-                                <p class="mb-0" t-esc="provider.services_description or 'Sin servicios capturados todavía.'"/>
-                            </div>
-                        </div>
-
                         <div t-if="can_publish_post" class="card border-0 shadow-sm mb-4">
                             <div class="card-body">
                                 <h5 class="mb-3">Publicar una novedad</h5>
                                 <form t-attf-action="/my/turismo/prestador/#{provider.id}/post" method="post" enctype="multipart/form-data">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <textarea class="form-control mb-3" rows="3" name="body" placeholder="Ejemplo: Este fin de semana hay promoción familiar." required="required"/>
+                                    <textarea class="form-control mb-3" rows="3" name="body" placeholder="Comparte una novedad..." required="required"/>
                                     <div class="d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-between">
                                         <input class="form-control" type="file" name="post_image" accept="image/*"/>
                                         <button class="btn btn-primary" type="submit">Publicar</button>
@@ -160,22 +153,7 @@
                             <div class="card-body">
                                 <h5 class="mb-3">Contacto rápido</h5>
                                 <p class="mb-1"><strong>Tel:</strong> <span t-esc="provider.phone or 'No disponible'"/></p>
-                                <p class="mb-1"><strong>WhatsApp:</strong> <span t-esc="provider.whatsapp or 'No disponible'"/></p>
                                 <p class="mb-1"><strong>Correo:</strong> <span t-esc="provider.email or 'No disponible'"/></p>
-                                <p class="mb-1"><strong>Municipio:</strong> <span t-esc="provider.city or 'No disponible'"/></p>
-                                <p class="mb-0"><strong>Horarios:</strong> <span t-esc="provider.schedule or 'No disponible'"/></p>
-                            </div>
-                        </div>
-
-                        <div class="card shadow-sm border-0 mb-4">
-                            <div class="card-body">
-                                <h5 class="mb-3">Síguenos</h5>
-                                <div class="d-flex flex-wrap gap-3">
-                                    <a t-if="provider.facebook_url" t-att-href="provider.facebook_url" target="_blank">Facebook</a>
-                                    <a t-if="provider.instagram_url" t-att-href="provider.instagram_url" target="_blank">Instagram</a>
-                                    <a t-if="provider.tiktok_url" t-att-href="provider.tiktok_url" target="_blank">TikTok</a>
-                                    <a t-if="provider.website_url" t-att-href="provider.website_url" target="_blank">Sitio web</a>
-                                </div>
                             </div>
                         </div>
 
@@ -201,51 +179,32 @@
         <t t-call="website.layout">
             <div class="container py-5">
                 <div class="row justify-content-center">
-                    <div class="col-lg-10">
-                        <h1 class="h2 mb-2">Registro de prestadores turísticos</h1>
-                        <p class="text-muted mb-4">Formulario simplificado en 3 pasos (perfil, contacto y servicios).</p>
+                    <div class="col-lg-8">
+                        <h1 class="h2 mb-2">Registro rápido de perfil</h1>
+                        <p class="text-muted mb-4">Solo necesitamos 4 datos para crear tu perfil inicial.</p>
                         <div t-if="error" class="alert alert-danger" t-esc="error"/>
                         <div t-if="success" class="alert alert-success" t-esc="success"/>
-                        <form action="/turismo/registro" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm border-0 tp-form">
+                        <form action="/turismo/registro" method="post" class="card p-4 shadow-sm border-0 tp-form">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-
-                            <h5 class="tp-step-title">Paso 1: Perfil público</h5>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6"><label>Nombre del negocio *</label><input class="form-control" type="text" name="name" t-att-value="form_values.get('name','')" required="required"/></div>
-                                <div class="col-md-6"><label>Nombre del responsable *</label><input class="form-control" type="text" name="responsible_name" t-att-value="form_values.get('responsible_name','')" required="required"/></div>
-                                <div class="col-md-6"><label>Categoría *</label><select class="form-select" name="category_id" required="required"><option value="">Selecciona</option><t t-foreach="categories" t-as="cat"><option t-att-value="cat.id" t-att-selected="str(cat.id) == str(form_values.get('category_id','')) and 'selected' or None"><t t-esc="cat.name"/></option></t></select></div>
-                                <div class="col-md-6"><label>Foto de perfil</label><input class="form-control" type="file" name="profile_image_1920" accept="image/*"/></div>
-                                <div class="col-md-6"><label>Foto de portada</label><input class="form-control" type="file" name="cover_image_1920" accept="image/*"/></div>
-                                <div class="col-md-6"><label>Imagen principal / logotipo</label><input class="form-control" type="file" name="image_1920" accept="image/*"/></div>
-                                <div class="col-12"><label>Descripción corta</label><textarea class="form-control" name="description" rows="2"><t t-esc="form_values.get('description','')"/></textarea></div>
-                            </div>
-
-                            <h5 class="tp-step-title">Paso 2: Contacto</h5>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6"><label>Correo *</label><input class="form-control" type="email" name="email" t-att-value="form_values.get('email','')" required="required"/></div>
-                                <div class="col-md-3"><label>Teléfono</label><input class="form-control" type="text" name="phone" t-att-value="form_values.get('phone','')"/></div>
-                                <div class="col-md-3"><label>WhatsApp</label><input class="form-control" type="text" name="whatsapp" t-att-value="form_values.get('whatsapp','')"/></div>
-                                <div class="col-md-6"><label>Dirección</label><input class="form-control" type="text" name="street" t-att-value="form_values.get('street','')"/></div>
-                                <div class="col-md-6"><label>Ubicación / referencia</label><input class="form-control" type="text" name="location_reference" t-att-value="form_values.get('location_reference','')"/></div>
-                                <div class="col-md-6"><label>Municipio *</label><input class="form-control" type="text" name="city" t-att-value="form_values.get('city','Atemajac de Brizuela')" required="required"/></div>
-                                <div class="col-md-6"><label>Estado</label><select class="form-select" name="state_id"><option value="">Selecciona</option><t t-foreach="states" t-as="st"><option t-att-value="st.id" t-att-selected="str(st.id) == str(form_values.get('state_id','')) and 'selected' or None"><t t-esc="st.name"/></option></t></select></div>
-                            </div>
-
-                            <h5 class="tp-step-title">Paso 3: Servicios y redes</h5>
                             <div class="row g-3">
-                                <div class="col-md-4"><label>Facebook</label><input class="form-control" type="url" name="facebook_url"/></div>
-                                <div class="col-md-4"><label>Instagram</label><input class="form-control" type="url" name="instagram_url"/></div>
-                                <div class="col-md-4"><label>TikTok</label><input class="form-control" type="url" name="tiktok_url"/></div>
-                                <div class="col-md-6"><label>Sitio web</label><input class="form-control" type="url" name="website_url" t-att-value="form_values.get('website_url','')"/></div>
-                                <div class="col-md-6"><label>Horarios</label><textarea class="form-control" name="schedule" rows="2"/></div>
-                                <div class="col-12"><label>Servicios que ofrece</label><textarea class="form-control" name="services_description" rows="2"/></div>
-                                <div class="col-md-12"><label>Galería (hasta 3 imágenes)</label><input class="form-control" type="file" name="gallery_1" accept="image/*"/><input class="form-control mt-2" type="file" name="gallery_2" accept="image/*"/><input class="form-control mt-2" type="file" name="gallery_3" accept="image/*"/></div>
-                                <div class="col-12 form-check mt-3">
-                                    <input class="form-check-input" type="checkbox" name="terms_accepted" id="terms_accepted" required="required"/>
-                                    <label class="form-check-label" for="terms_accepted">Acepto términos y autorizo revisión municipal.</label>
+                                <div class="col-md-6">
+                                    <label>Nombre del perfil *</label>
+                                    <input class="form-control" type="text" name="name" t-att-value="form_values.get('name','')" required="required"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Número de contacto *</label>
+                                    <input class="form-control" type="text" name="phone" t-att-value="form_values.get('phone','')" required="required"/>
+                                </div>
+                                <div class="col-md-12">
+                                    <label>Correo *</label>
+                                    <input class="form-control" type="email" name="email" t-att-value="form_values.get('email','')" required="required"/>
+                                </div>
+                                <div class="col-md-12">
+                                    <label>Descripción de la petición *</label>
+                                    <textarea class="form-control" name="description" rows="4" required="required"><t t-esc="form_values.get('description','')"/></textarea>
                                 </div>
                             </div>
-                            <button class="btn btn-primary mt-4" type="submit">Enviar solicitud</button>
+                            <button class="btn btn-primary mt-4" type="submit">Crear perfil</button>
                         </form>
                     </div>
                 </div>
@@ -257,7 +216,7 @@
         <t t-call="website.layout">
             <div class="container py-5">
                 <h1 class="h3 mb-4">Mis prestadores turísticos</h1>
-                <a href="/turismo/registro" class="btn btn-primary mb-3">Crear nueva solicitud</a>
+                <a href="/turismo/registro" class="btn btn-primary mb-3">Crear nuevo perfil</a>
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
@@ -270,7 +229,7 @@
                                     <td t-esc="provider.category_id.name"/>
                                     <td><span class="badge text-bg-secondary" t-esc="provider.state"/></td>
                                     <td t-esc="provider.write_date"/>
-                                    <td><a t-attf-href="/my/turismo/prestador/#{provider.id}">Editar</a></td>
+                                    <td><a t-attf-href="/my/turismo/prestador/#{provider.id}">Abrir perfil</a></td>
                                 </tr>
                             </t>
                         </tbody>
@@ -283,30 +242,70 @@
     <template id="tourism_portal_provider_edit" name="Portal - Editar prestador">
         <t t-call="website.layout">
             <div class="container py-5">
-                <h1 class="h3 mb-3">Editar prestador</h1>
-                <p class="text-muted">Tip: primero llena perfil (fotos), luego contacto y listo.</p>
+                <h1 class="h3 mb-3">Mi perfil turístico</h1>
+                <p class="text-muted">Estilo red social: sube portada y foto de perfil, luego publica novedades.</p>
                 <div t-if="error" class="alert alert-danger" t-esc="error"/>
                 <div t-if="success" class="alert alert-success" t-esc="success"/>
-                <form t-attf-action="/my/turismo/prestador/#{provider.id}" method="post" enctype="multipart/form-data" class="card p-4">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                    <div class="row g-3">
-                        <div class="col-md-6"><label>Nombre</label><input class="form-control" type="text" name="name" t-att-value="provider.name"/></div>
-                        <div class="col-md-6"><label>Responsable</label><input class="form-control" type="text" name="responsible_name" t-att-value="provider.responsible_name"/></div>
-                        <div class="col-md-6"><label>Categoría</label><select name="category_id" class="form-select"><t t-foreach="categories" t-as="cat"><option t-att-value="cat.id" t-att-selected="cat.id == provider.category_id.id and 'selected' or None"><t t-esc="cat.name"/></option></t></select></div>
-                        <div class="col-md-6"><label>Estado actual</label><input class="form-control" type="text" t-att-value="provider.state" readonly="readonly"/></div>
-                        <div class="col-md-6"><label>Foto de perfil</label><input class="form-control" type="file" name="profile_image_1920" accept="image/*"/></div>
-                        <div class="col-md-6"><label>Foto de portada</label><input class="form-control" type="file" name="cover_image_1920" accept="image/*"/></div>
-                        <div class="col-md-6"><label>Teléfono</label><input class="form-control" type="text" name="phone" t-att-value="provider.phone or ''"/></div>
-                        <div class="col-md-6"><label>WhatsApp</label><input class="form-control" type="text" name="whatsapp" t-att-value="provider.whatsapp or ''"/></div>
-                        <div class="col-md-6"><label>Correo</label><input class="form-control" type="email" name="email" t-att-value="provider.email or ''"/></div>
-                        <div class="col-md-6"><label>Dirección</label><input class="form-control" type="text" name="street" t-att-value="provider.street or ''"/></div>
-                        <div class="col-md-6"><label>Ubicación / referencia</label><input class="form-control" type="text" name="location_reference" t-att-value="provider.location_reference or ''"/></div>
-                        <div class="col-md-6"><label>Descripción</label><textarea class="form-control" rows="2" name="description" t-esc="provider.description or ''"/></div>
-                        <div class="col-md-6"><label>Horarios</label><textarea class="form-control" rows="2" name="schedule" t-esc="provider.schedule or ''"/></div>
-                        <div class="col-md-12"><label>Servicios</label><textarea class="form-control" rows="2" name="services_description" t-esc="provider.services_description or ''"/></div>
+
+                <section class="tp-cover position-relative rounded-4 overflow-hidden mb-4">
+                    <img t-if="provider.cover_image_1920" t-att-src="image_data_uri(provider.cover_image_1920)" class="w-100 h-100 tp-cover-image" alt="Portada"/>
+                    <div t-if="not provider.cover_image_1920" class="tp-cover-placeholder"/>
+                    <div class="tp-profile-summary position-absolute start-0 bottom-0 p-3 p-md-4 w-100">
+                        <div class="d-flex align-items-end gap-3 text-white">
+                            <img t-if="provider.profile_image_1920" t-att-src="image_data_uri(provider.profile_image_1920)" class="tp-avatar" alt="Perfil"/>
+                            <div t-if="not provider.profile_image_1920" class="tp-avatar tp-avatar-fallback d-flex align-items-center justify-content-center fw-bold">
+                                <span t-esc="(provider.name or '?')[:1]"/>
+                            </div>
+                            <div>
+                                <h2 class="h4 mb-1" t-esc="provider.name"/>
+                                <p class="mb-0 opacity-75">Panel de administración frontal</p>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn btn-primary mt-4" type="submit">Guardar y reenviar a revisión</button>
-                </form>
+                </section>
+
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <form t-attf-action="/my/turismo/prestador/#{provider.id}" method="post" enctype="multipart/form-data" class="card p-4 shadow-sm border-0">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <h5 class="mb-3">Editar perfil</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6"><label>Nombre del perfil</label><input class="form-control" type="text" name="name" t-att-value="provider.name" required="required"/></div>
+                                <div class="col-md-6"><label>Categoría</label><select name="category_id" class="form-select"><t t-foreach="categories" t-as="cat"><option t-att-value="cat.id" t-att-selected="cat.id == provider.category_id.id and 'selected' or None"><t t-esc="cat.name"/></option></t></select></div>
+                                <div class="col-md-6"><label>Número de contacto</label><input class="form-control" type="text" name="phone" t-att-value="provider.phone or ''"/></div>
+                                <div class="col-md-6"><label>Correo</label><input class="form-control" type="email" name="email" t-att-value="provider.email or ''"/></div>
+                                <div class="col-md-6"><label>Foto de perfil</label><input class="form-control" type="file" name="profile_image_1920" accept="image/*"/></div>
+                                <div class="col-md-6"><label>Foto de portada</label><input class="form-control" type="file" name="cover_image_1920" accept="image/*"/></div>
+                                <div class="col-12"><label>Descripción</label><textarea class="form-control" rows="3" name="description" t-esc="provider.description or ''"/></div>
+                            </div>
+                            <button class="btn btn-primary mt-4" type="submit">Guardar perfil</button>
+                        </form>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="card p-4 shadow-sm border-0 mb-4">
+                            <h5 class="mb-3">Crear publicación</h5>
+                            <form t-attf-action="/my/turismo/prestador/#{provider.id}/post" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <textarea class="form-control mb-3" rows="3" name="body" placeholder="¿Qué quieres compartir hoy?" required="required"/>
+                                <input class="form-control mb-3" type="file" name="post_image" accept="image/*"/>
+                                <button class="btn btn-primary w-100" type="submit">Publicar</button>
+                            </form>
+                        </div>
+
+                        <div class="card p-4 shadow-sm border-0">
+                            <h5 class="mb-3">Tus últimas publicaciones</h5>
+                            <t t-foreach="provider.post_ids[:5]" t-as="post">
+                                <article class="border rounded-3 p-3 mb-3">
+                                    <p class="mb-2" t-esc="post.body"/>
+                                    <img t-if="post.image_1920" t-att-src="image_data_uri(post.image_1920)" class="img-fluid rounded-3 mb-2" alt="Imagen de publicación"/>
+                                    <small class="text-muted" t-esc="post.create_date"/>
+                                </article>
+                            </t>
+                            <p t-if="not provider.post_ids" class="text-muted mb-0">Todavía no publicas nada.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </t>
     </template>

@@ -8,6 +8,12 @@ class TourismPortalController(http.Controller):
     def _provider_base_domain(self):
         return [("state", "=", "published"), ("is_published", "=", True)]
 
+    def _default_category_id(self):
+        category = request.env["tourism.provider.category"].sudo().search([("active", "=", True)], limit=1)
+        if not category:
+            category = request.env["tourism.provider.category"].sudo().search([], limit=1)
+        return category.id if category else False
+
     @http.route(["/turismo", "/turismo/prestadores"], type="http", auth="public", website=True, sitemap=True)
     def tourism_home(self, category_id=None, search=None, **kwargs):
         category_id = int(category_id) if category_id and str(category_id).isdigit() else False
@@ -39,11 +45,7 @@ class TourismPortalController(http.Controller):
         )
         if not provider:
             return request.not_found()
-        can_publish_post = (
-            not request.env.user._is_public()
-            and provider.portal_user_id.id == request.env.user.id
-            and provider.state == "published"
-        )
+        can_publish_post = not request.env.user._is_public() and provider.portal_user_id.id == request.env.user.id
         return request.render(
             "tourism_provider_portal.tourism_provider_detail",
             {
@@ -55,13 +57,9 @@ class TourismPortalController(http.Controller):
 
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["GET"])
     def tourism_register(self, **kwargs):
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
-        states = request.env["res.country.state"].sudo().search([("country_id.code", "=", "MX")])
         return request.render(
             "tourism_provider_portal.tourism_provider_register",
             {
-                "categories": categories,
-                "states": states,
                 "form_values": kwargs,
                 "error": False,
                 "success": False,
@@ -71,19 +69,16 @@ class TourismPortalController(http.Controller):
 
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["POST"], csrf=True)
     def tourism_register_submit(self, **post):
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
-        states = request.env["res.country.state"].sudo().search([("country_id.code", "=", "MX")])
-
-        required_fields = ["name", "responsible_name", "category_id", "email", "city"]
+        required_fields = ["name", "phone", "email", "description"]
         missing = [field for field in required_fields if not post.get(field)]
-        if missing or not post.get("terms_accepted"):
+        category_id = self._default_category_id()
+
+        if missing or not category_id:
             return request.render(
                 "tourism_provider_portal.tourism_provider_register",
                 {
-                    "categories": categories,
-                    "states": states,
                     "form_values": post,
-                    "error": "Completa los campos obligatorios y acepta términos.",
+                    "error": "Completa nombre de perfil, número, correo y descripción.",
                     "success": False,
                     "register_url": "/turismo/registro",
                 },
@@ -91,60 +86,20 @@ class TourismPortalController(http.Controller):
 
         vals = {
             "name": post.get("name"),
-            "responsible_name": post.get("responsible_name"),
-            "category_id": int(post.get("category_id")),
+            "responsible_name": post.get("name"),
+            "category_id": category_id,
             "description": post.get("description"),
+            "services_description": post.get("description"),
             "phone": post.get("phone"),
-            "whatsapp": post.get("whatsapp"),
             "email": post.get("email"),
-            "street": post.get("street"),
-            "location_reference": post.get("location_reference"),
-            "city": post.get("city"),
-            "state_id": int(post.get("state_id")) if post.get("state_id") else False,
-            "facebook_url": post.get("facebook_url"),
-            "instagram_url": post.get("instagram_url"),
-            "tiktok_url": post.get("tiktok_url"),
-            "website_url": post.get("website_url"),
-            "schedule": post.get("schedule"),
-            "services_description": post.get("services_description"),
-            "terms_accepted": True,
             "state": "pending",
+            "is_published": False,
+            "terms_accepted": True,
             "portal_user_id": request.env.user.id if request.env.user and not request.env.user._is_public() else False,
         }
 
-        main_image = post.get("image_1920")
-        if main_image and getattr(main_image, "filename", False):
-            vals["image_1920"] = base64.b64encode(main_image.read())
-
-        profile_image = post.get("profile_image_1920")
-        if profile_image and getattr(profile_image, "filename", False):
-            vals["profile_image_1920"] = base64.b64encode(profile_image.read())
-
-        cover_image = post.get("cover_image_1920")
-        if cover_image and getattr(cover_image, "filename", False):
-            vals["cover_image_1920"] = base64.b64encode(cover_image.read())
-
         provider = request.env["tourism.provider"].sudo().create(vals)
-
-        gallery_commands = []
-        for key in sorted(post):
-            if key.startswith("gallery_"):
-                file_obj = post[key]
-                if getattr(file_obj, "filename", False):
-                    gallery_commands.append(
-                        (
-                            0,
-                            0,
-                            {
-                                "name": file_obj.filename,
-                                "image_1920": base64.b64encode(file_obj.read()),
-                            },
-                        )
-                    )
-        if gallery_commands:
-            provider.sudo().write({"gallery_image_ids": gallery_commands})
-
-        provider.message_post(body="Solicitud creada desde formulario público /turismo/registro")
+        provider.message_post(body="Solicitud rápida creada desde /turismo/registro")
 
         validators = request.env.ref("tourism_provider_portal.group_tourism_validator").users
         admins = request.env.ref("tourism_provider_portal.group_tourism_admin").users
@@ -154,18 +109,16 @@ class TourismPortalController(http.Controller):
             provider.activity_schedule(
                 "mail.mail_activity_data_todo",
                 user_id=users_to_notify[0].id,
-                summary="Nueva solicitud de prestador turístico",
+                summary="Nueva solicitud rápida de prestador",
                 note=f"Se registró '{provider.name}' y está pendiente de revisión.",
             )
 
         return request.render(
             "tourism_provider_portal.tourism_provider_register",
             {
-                "categories": categories,
-                "states": states,
                 "form_values": {},
                 "error": False,
-                "success": "Tu solicitud fue enviada y está en revisión.",
+                "success": "Registro enviado. Si iniciaste sesión, ya puedes entrar a tu panel para subir portada/perfil y publicar.",
                 "register_url": "/turismo/registro",
             },
         )
@@ -186,7 +139,12 @@ class TourismPortalController(http.Controller):
         categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
         return request.render(
             "tourism_provider_portal.tourism_portal_provider_edit",
-            {"provider": provider, "categories": categories, "error": False, "success": False},
+            {
+                "provider": provider,
+                "categories": categories,
+                "error": False,
+                "success": False,
+            },
         )
 
     @http.route(["/my/turismo/prestador/<int:provider_id>"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
@@ -196,15 +154,10 @@ class TourismPortalController(http.Controller):
             return request.not_found()
         vals = {
             "name": post.get("name"),
-            "responsible_name": post.get("responsible_name"),
+            "responsible_name": post.get("name") or provider.responsible_name,
             "phone": post.get("phone"),
-            "whatsapp": post.get("whatsapp"),
             "email": post.get("email"),
-            "street": post.get("street"),
-            "location_reference": post.get("location_reference"),
             "description": post.get("description"),
-            "schedule": post.get("schedule"),
-            "services_description": post.get("services_description"),
             "category_id": int(post.get("category_id")) if post.get("category_id") else provider.category_id.id,
             "state": "pending",
             "is_published": False,
@@ -225,10 +178,9 @@ class TourismPortalController(http.Controller):
                 "provider": provider,
                 "categories": categories,
                 "error": False,
-                "success": "Cambios guardados y reenviados a revisión.",
+                "success": "Perfil actualizado. Tus cambios se enviaron a revisión.",
             },
         )
-
 
     @http.route(["/my/turismo/prestador/<int:provider_id>/post"], type="http", auth="user", website=True, methods=["POST"], csrf=True)
     def my_tourism_provider_post_create(self, provider_id, **post):
@@ -238,7 +190,7 @@ class TourismPortalController(http.Controller):
 
         body = (post.get("body") or "").strip()
         if not body:
-            return request.redirect(f"/turismo/prestador/{provider.website_slug}")
+            return request.redirect(f"/my/turismo/prestador/{provider.id}")
 
         vals = {
             "provider_id": provider.id,
@@ -251,4 +203,4 @@ class TourismPortalController(http.Controller):
             vals["image_1920"] = base64.b64encode(post_image.read())
 
         request.env["tourism.provider.post"].sudo().create(vals)
-        return request.redirect(f"/turismo/prestador/{provider.website_slug}")
+        return request.redirect(f"/my/turismo/prestador/{provider.id}")
