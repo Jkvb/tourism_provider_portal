@@ -201,7 +201,7 @@
                                     <textarea class="form-control" name="description" rows="5" required="required"><t t-esc="form_values.get('description','')"/></textarea>
                                 </div>
                             </div>
-                            <button class="btn btn-primary mt-4" type="submit">Enviar solicitud</button>
+                            <button class="btn btn-primary mt-4" type="submit">Crear perfil</button>
                         </form>
                     </div>
                 </div>
