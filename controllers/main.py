@@ -103,20 +103,19 @@ class TourismPortalController(http.Controller):
             )
 
         portal_group = request.env.ref("base.group_portal")
-        user = (
-            request.env["res.users"]
-            .sudo()
-            .with_context(no_reset_password=True)
-            .create(
-                {
-                    "name": email,
-                    "login": email,
-                    "email": email,
-                    "active": False,
-                    "groups_ids": [(6, 0, [portal_group.id])],
-                }
-            )
-        )
+        users_model = request.env["res.users"].sudo().with_context(no_reset_password=True)
+        user_vals = {
+            "name": email,
+            "login": email,
+            "email": email,
+            "active": False,
+        }
+        if "groups_id" in users_model._fields:
+            user_vals["groups_id"] = [(6, 0, [portal_group.id])]
+        elif "groups_ids" in users_model._fields:
+            user_vals["groups_ids"] = [(6, 0, [portal_group.id])]
+
+        user = users_model.create(user_vals)
 
         provider = request.env["tourism.provider"].sudo().create(
             {
