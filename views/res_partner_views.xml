@@ -14,14 +14,16 @@
                     <field name="tourism_status"/>
                 </group>
             </xpath>
-            <xpath expr="//header" position="inside">
-                <button
-                    name="action_approve_tourism"
-                    type="object"
-                    string="Aprobar Turismo"
-                    class="btn-primary"
-                    invisible="tourism_status != 'pending'"
-                />
+            <xpath expr="//form/sheet" position="before">
+                <header>
+                    <button
+                        name="action_approve_tourism"
+                        type="object"
+                        string="Aprobar Turismo"
+                        class="btn-primary"
+                        invisible="tourism_status != 'pending'"
+                    />
+                </header>
             </xpath>
         </field>
     </record>
