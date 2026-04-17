@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <data>
     <template id="my_tourism_profile" name="My Tourism Profile" page="True">
         <t t-call="website.layout">
             <div class="container py-5">
@@ -123,4 +124,5 @@
             </div>
         </t>
     </template>
+    </data>
 </odoo>
