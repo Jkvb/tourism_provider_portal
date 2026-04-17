@@ -66,7 +66,7 @@ class TourismPortalController(http.Controller):
     @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["GET"])
     def tourism_register(self, **kwargs):
         return request.render(
-            "tourism_provider_portal.tourism_provider_register",
+            "tourism_provider_portal.tourism_provider_register_webfirst",
             {
                 "form_values": kwargs,
                 "error": False,
@@ -80,7 +80,10 @@ class TourismPortalController(http.Controller):
         email_confirm = (post.get("email_confirm") or "").strip().lower()
 
         if not email or not email_confirm:
-            error = _("Debes capturar y confirmar tu correo.")
+            if post.get("description"):
+                error = _("La pantalla de registro está desactualizada. Recarga la página y captura correo + confirmar correo.")
+            else:
+                error = _("Debes capturar y confirmar tu correo.")
         elif not EMAIL_RE.match(email):
             error = _("El correo no tiene un formato válido.")
         elif email != email_confirm:
@@ -96,7 +99,7 @@ class TourismPortalController(http.Controller):
 
         if error:
             return request.render(
-                "tourism_provider_portal.tourism_provider_register",
+                "tourism_provider_portal.tourism_provider_register_webfirst",
                 {
                     "form_values": post,
                     "error": error,
