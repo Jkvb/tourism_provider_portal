@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_whatsapp_tourism" model="ir.ui.view">
+        <field name="name">res.partner.form.whatsapp.tourism</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='mobile']" position="after">
+                <field name="whatsapp_number"/>
+            </xpath>
+            <xpath expr="//sheet/group" position="inside">
+                <group string="Turismo por WhatsApp">
+                    <field name="chatbot_state"/>
+                    <field name="tourism_status"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button
+                    name="action_approve_tourism"
+                    type="object"
+                    string="Aprobar Turismo"
+                    class="btn-primary"
+                    invisible="tourism_status != 'pending'"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_partner_tree_tourism_pending" model="ir.ui.view">
+        <field name="name">res.partner.tree.tourism.pending</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="whatsapp_number"/>
+                <field name="chatbot_state"/>
+                <field name="tourism_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_partner_kanban_tourism_pending" model="ir.ui.view">
+        <field name="name">res.partner.kanban.tourism.pending</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="name"/>
+                <field name="whatsapp_number"/>
+                <field name="chatbot_state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <strong><field name="name"/></strong>
+                            <div>
+                                <span>WhatsApp:</span>
+                                <field name="whatsapp_number"/>
+                            </div>
+                            <div>
+                                <span>Estado chatbot:</span>
+                                <field name="chatbot_state"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_tourism_pending_partners" model="ir.actions.act_window">
+        <field name="name">Solicitudes de Turismo</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[("tourism_status", "=", "pending")]
+        </field>
+        <field name="context">{"search_default_filter_pending_tourism": 1}</field>
+    </record>
+
+    <menuitem
+        id="menu_tourism_pending_root"
+        name="Solicitudes de Turismo"
+        parent="contacts.menu_contacts"
+        action="action_tourism_pending_partners"
+        sequence="95"
+    />
+</odoo>
