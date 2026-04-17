@@ -1,12 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <menuitem id="menu_tourism_root" name="Turismo" sequence="5" groups="group_tourism_admin,group_tourism_validator"/>
+    <menuitem id="menu_tourism_root" name="Turismo" parent="crm.crm_menu_root" sequence="70"/>
 
-    <menuitem id="menu_tourism_provider" name="Prestadores" parent="menu_tourism_root" action="action_tourism_provider" sequence="10"/>
-    <menuitem id="menu_tourism_provider_pending" name="Solicitudes pendientes" parent="menu_tourism_root" action="action_tourism_provider_pending" sequence="20"/>
-    <menuitem id="menu_tourism_provider_published" name="Publicados" parent="menu_tourism_root" action="action_tourism_provider_published" sequence="30"/>
-    <menuitem id="menu_tourism_provider_rejected" name="Rechazados" parent="menu_tourism_root" action="action_tourism_provider_rejected" sequence="40"/>
+    <menuitem id="menu_tourism_whatsapp_requests"
+              name="Solicitudes WhatsApp"
+              parent="menu_tourism_root"
+              action="action_tourism_whatsapp_requests"
+              sequence="10"/>
 
-    <menuitem id="menu_tourism_config" name="Configuración" parent="menu_tourism_root" sequence="90"/>
-    <menuitem id="menu_tourism_categories" name="Categorías" parent="menu_tourism_config" action="action_tourism_category" sequence="10"/>
+    <menuitem id="menu_tourism_posts"
+              name="Publicaciones"
+              parent="menu_tourism_root"
+              action="action_tourism_posts"
+              sequence="20"/>
 </odoo>

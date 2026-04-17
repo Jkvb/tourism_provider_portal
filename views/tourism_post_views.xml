@@ -1,12 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <record id="view_tourism_post_tree" model="ir.ui.view">
         <field name="name">tourism.post.tree</field>
         <field name="model">tourism.post</field>
         <field name="arch" type="xml">
             <tree>
+                <field name="create_date"/>
                 <field name="author_id"/>
                 <field name="content"/>
-                <field name="create_date"/>
+                <field name="is_published"/>
             </tree>
         </field>
     </record>
@@ -19,6 +21,7 @@
                 <sheet>
                     <group>
                         <field name="author_id"/>
+                        <field name="is_published"/>
                         <field name="content"/>
                         <field name="image" widget="image"/>
                     </group>
@@ -27,11 +30,20 @@
         </field>
     </record>
 
-    <record id="action_tourism_post" model="ir.actions.act_window">
-        <field name="name">Publicaciones turismo</field>
+    <record id="action_tourism_posts" model="ir.actions.act_window">
+        <field name="name">Publicaciones</field>
         <field name="res_model">tourism.post</field>
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_tourism_posts" name="Publicaciones" parent="menu_tourism_root" action="action_tourism_post" sequence="20"/>
+    <record id="portal_tourism_post_own_rule" model="ir.rule">
+        <field name="name">Portal own tourism posts</field>
+        <field name="model_id" ref="model_tourism_post"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('author_id', '=', user.partner_id.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
 </odoo>
