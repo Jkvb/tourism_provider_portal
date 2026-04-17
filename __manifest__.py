@@ -1,12 +1,12 @@
 {
     "name": "Tourism Provider Portal",
     "summary": "Registro web-first, aprobación y mini fanpage para prestadores turísticos",
-    "version": "19.0.2.0.0",
+    "version": "18.0.3.0.0",
     "category": "Website",
     "author": "Municipio Atemajac de Brizuela",
     "website": "https://atemajacdebrizuela.gob.mx",
     "license": "LGPL-3",
-    "depends": ["base", "mail", "portal", "website", "auth_signup"],
+    "depends": ["base", "mail", "portal", "website", "auth_signup", "contacts"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
@@ -15,6 +15,8 @@
         "views/tourism_provider_views.xml",
         "views/tourism_category_views.xml",
         "views/tourism_menus.xml",
+        "views/res_config_settings_views.xml",
+        "views/res_partner_views.xml",
         "views/website_templates.xml",
     ],
     "assets": {
