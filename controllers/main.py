@@ -1,320 +1,138 @@
-import base64
+import json
 import logging
-import re
 
-from odoo import _, fields, http
+from odoo import http
 from odoo.http import request
 
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _logger = logging.getLogger(__name__)
 
 
-class TourismPortalController(http.Controller):
-    def _provider_base_domain(self):
-        return [("state", "=", "published"), ("is_published", "=", True)]
-
-    def _default_category(self):
-        category = request.env["tourism.provider.category"].sudo().search([("active", "=", True)], limit=1)
-        if not category:
-            category = request.env["tourism.provider.category"].sudo().search([], limit=1)
-        return category
-
-    def _current_provider(self):
-        return request.env["tourism.provider"].sudo().search([("portal_user_id", "=", request.env.user.id)], limit=1)
-
-    @http.route(["/turismo", "/turismo/prestadores"], type="http", auth="public", website=True, sitemap=True)
-    def tourism_home(self, category_id=None, search=None, **kwargs):
-        category_id = int(category_id) if category_id and str(category_id).isdigit() else False
-        domain = self._provider_base_domain()
-        if category_id:
-            domain.append(("category_id", "=", category_id))
-        if search:
-            domain += ["|", ("name", "ilike", search), ("description", "ilike", search)]
-
-        providers = request.env["tourism.provider"].sudo().search(domain, limit=60)
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
-        featured = request.env["tourism.provider"].sudo().search(self._provider_base_domain(), limit=6)
-        values = {
-            "providers": providers,
-            "categories": categories,
-            "featured_providers": featured,
-            "selected_category": category_id,
-            "search": search or "",
-            "register_url": "/turismo/registro",
-        }
-        return request.render("tourism_provider_portal.tourism_home", values)
-
-    @http.route("/turismo/prestador/<string:slug>", type="http", auth="public", website=True, sitemap=True)
-    def tourism_provider_detail(self, slug, **kwargs):
-        provider = (
-            request.env["tourism.provider"]
-            .sudo()
-            .search(self._provider_base_domain() + [("website_slug", "=", slug)], limit=1)
-        )
-        if not provider:
-            return request.not_found()
-
-        posts = provider.post_ids.filtered(lambda p: p.is_published)
-        return request.render(
-            "tourism_provider_portal.tourism_provider_detail",
-            {
-                "provider": provider,
-                "posts": posts,
-            },
-        )
-
-    @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["GET"])
-    def tourism_register(self, **kwargs):
-        return request.render(
-            "tourism_provider_portal.tourism_provider_register",
-            {
-                "form_values": kwargs,
-                "error": False,
-                "success": False,
-            },
-        )
-
-    @http.route("/turismo/registro", type="http", auth="public", website=True, methods=["POST"], csrf=True)
-    def tourism_register_submit(self, **post):
-        email = (post.get("email") or "").strip().lower()
-        email_confirm = (post.get("email_confirm") or "").strip().lower()
-
-        if not email or not email_confirm:
-            error = _("Debes capturar y confirmar tu correo.")
-        elif not EMAIL_RE.match(email):
-            error = _("El correo no tiene un formato válido.")
-        elif email != email_confirm:
-            error = _("Los correos no coinciden.")
-        else:
-            error = False
-
-        if not error:
-            provider_exists = request.env["tourism.provider"].sudo().search_count([("signup_email", "=", email)])
-            user_exists = request.env["res.users"].sudo().search_count([("login", "=", email)])
-            if provider_exists or user_exists:
-                error = _("Ese correo ya está registrado. Inicia sesión o recupera tu contraseña.")
-
-        if error:
-            return request.render(
-                "tourism_provider_portal.tourism_provider_register",
-                {
-                    "form_values": post,
-                    "error": error,
-                    "success": False,
-                },
-            )
-
-        portal_group = request.env.ref("base.group_portal")
-        users_model = request.env["res.users"].sudo().with_context(no_reset_password=True)
-        user_vals = {
-            "name": email,
-            "login": email,
-            "email": email,
-            "active": False,
-        }
-        if "groups_id" in users_model._fields:
-            user_vals["groups_id"] = [(6, 0, [portal_group.id])]
-        elif "groups_ids" in users_model._fields:
-            user_vals["groups_ids"] = [(6, 0, [portal_group.id])]
-
-        user = users_model.create(user_vals)
-
-        provider = request.env["tourism.provider"].sudo().create(
-            {
-                "name": email.split("@")[0],
-                "responsible_name": email.split("@")[0],
-                "portal_user_id": user.id,
-                "signup_email": email,
-                "email": email,
-                "category_id": self._default_category().id,
-                "state": "incomplete",
-                "is_published": False,
-            }
-        )
-        provider.regenerate_confirmation_token()
-        provider.action_send_confirmation_email()
-
-        return request.render(
-            "tourism_provider_portal.tourism_register_success",
-            {"email": email},
-        )
-
-    @http.route("/turismo/confirmar/<string:token>", type="http", auth="public", website=True)
-    def tourism_confirm_email(self, token, **kwargs):
-        provider = request.env["tourism.provider"].sudo().search([("confirmation_token", "=", token)], limit=1)
-        if not provider:
-            return request.render("tourism_provider_portal.tourism_confirm_error")
-
-        provider.write(
-            {
-                "email_confirmed": True,
-                "confirmation_date": fields.Datetime.now(),
-                "confirmation_token": False,
-            }
-        )
-        provider.portal_user_id.sudo().write({"active": True})
-        provider.portal_user_id.sudo().action_reset_password()
-        return request.render("tourism_provider_portal.tourism_confirm_success")
-
-    @http.route("/my/turismo/perfil", type="http", auth="user", website=True, methods=["GET"])
-    def my_tourism_profile(self, **kwargs):
-        provider = self._current_provider()
-        if not provider:
-            return request.redirect("/turismo/registro")
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
-        return request.render(
-            "tourism_provider_portal.tourism_portal_provider_edit",
-            {
-                "provider": provider,
-                "categories": categories,
-                "error": False,
-                "success": False,
-                "posts": provider.post_ids,
-            },
-        )
-
-    @http.route("/my/turismo/perfil", type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def my_tourism_profile_submit(self, **post):
-        provider = self._current_provider()
-        if not provider:
-            return request.redirect("/turismo/registro")
-
-        vals = {
-            "name": (post.get("name") or "").strip(),
-            "responsible_name": (post.get("responsible_name") or "").strip(),
-            "phone": (post.get("phone") or "").strip(),
-            "email": (post.get("email") or "").strip(),
-            "description": post.get("description"),
-            "category_id": int(post.get("category_id")) if post.get("category_id") else False,
-            "street": (post.get("street") or "").strip(),
-            "location_reference": (post.get("location_reference") or "").strip(),
-            "city": (post.get("city") or "").strip(),
-            "schedule": (post.get("schedule") or "").strip(),
-            "services_description": (post.get("services_description") or "").strip(),
-            "facebook_url": (post.get("facebook_url") or "").strip(),
-            "instagram_url": (post.get("instagram_url") or "").strip(),
-            "tiktok_url": (post.get("tiktok_url") or "").strip(),
-            "website_url": (post.get("website_url") or "").strip(),
-            "state": "incomplete" if provider.state in ("draft", "incomplete", "rejected") else provider.state,
-            "is_published": False if provider.state in ("published", "approved") else provider.is_published,
-        }
-
-        profile_image = post.get("profile_image_1920")
-        if profile_image and getattr(profile_image, "filename", False):
-            vals["profile_image_1920"] = base64.b64encode(profile_image.read())
-
-        cover_image = post.get("cover_image_1920")
-        if cover_image and getattr(cover_image, "filename", False):
-            vals["cover_image_1920"] = base64.b64encode(cover_image.read())
-
-        provider.sudo().write(vals)
-
-        categories = request.env["tourism.provider.category"].sudo().search([("active", "=", True)])
-        return request.render(
-            "tourism_provider_portal.tourism_portal_provider_edit",
-            {
-                "provider": provider,
-                "categories": categories,
-                "error": False,
-                "success": _("Perfil guardado. Puedes enviarlo a revisión cuando esté completo."),
-                "posts": provider.post_ids,
-            },
-        )
-
-    @http.route("/my/turismo/perfil/enviar_revision", type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def my_tourism_submit_review(self, **post):
-        provider = self._current_provider()
-        if not provider:
-            return request.redirect("/turismo/registro")
-        provider.sudo().action_submit_for_review()
-        return request.redirect("/my/turismo/perfil")
-
-    @http.route("/my/turismo/post/create", type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def my_tourism_provider_post_create(self, **post):
-        provider = self._current_provider()
-        if not provider:
-            return request.redirect("/turismo/registro")
-
-        body = (post.get("body") or "").strip()
-        if not body:
-            return request.redirect("/my/turismo/perfil")
-
-        vals = {
-            "provider_id": provider.id,
-            "author_user_id": request.env.user.id,
-            "body": body,
-            "is_published": True,
-        }
-        post_image = post.get("post_image")
-        if post_image and getattr(post_image, "filename", False):
-            vals["image_1920"] = base64.b64encode(post_image.read())
-
-        request.env["tourism.provider.post"].sudo().create(vals)
-        return request.redirect("/my/turismo/perfil")
-
-    @http.route("/my/turismo/post/<int:post_id>/edit", type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def my_tourism_provider_post_edit(self, post_id, **post):
-        post_record = request.env["tourism.provider.post"].sudo().browse(post_id)
-        provider = self._current_provider()
-        if not post_record.exists() or not provider or post_record.provider_id.id != provider.id:
-            return request.not_found()
-
-        vals = {"body": (post.get("body") or "").strip()}
-        post_image = post.get("post_image")
-        if post_image and getattr(post_image, "filename", False):
-            vals["image_1920"] = base64.b64encode(post_image.read())
-        post_record.sudo().write(vals)
-        return request.redirect("/my/turismo/perfil")
-
-    @http.route("/my/turismo/post/<int:post_id>/delete", type="http", auth="user", website=True, methods=["POST"], csrf=True)
-    def my_tourism_provider_post_delete(self, post_id, **post):
-        post_record = request.env["tourism.provider.post"].sudo().browse(post_id)
-        provider = self._current_provider()
-        if not post_record.exists() or not provider or post_record.provider_id.id != provider.id:
-            return request.not_found()
-        post_record.sudo().unlink()
-        return request.redirect("/my/turismo/perfil")
-
-
-class WhatsAppWebhookController(http.Controller):
-    @http.route(
-        "/whatsapp/webhook",
-        type="http",
-        auth="public",
-        methods=["GET"],
-        csrf=False,
-    )
+class TourismProviderPortalController(http.Controller):
+    @http.route("/whatsapp/webhook", type="http", auth="public", methods=["GET"], csrf=False)
     def whatsapp_webhook_verify(self, **kwargs):
+        mode = kwargs.get("hub.mode")
         verify_token = kwargs.get("hub.verify_token")
         challenge = kwargs.get("hub.challenge")
-        mode = kwargs.get("hub.mode")
-        system_token = request.env["ir.config_parameter"].sudo().get_param("whatsapp_verify_token")
 
-        if mode == "subscribe" and verify_token and verify_token == system_token:
-            return request.make_response(challenge or "", headers=[("Content-Type", "text/plain")], status=200)
-        return request.make_response("Forbidden", status=403)
+        expected = request.env["ir.config_parameter"].sudo().get_param(
+            "tourism_provider_portal.verify_token"
+        )
+        if mode == "subscribe" and verify_token and verify_token == expected and challenge:
+            return request.make_response(challenge, headers=[("Content-Type", "text/plain")])
+        return request.make_response("Verification failed", status=403)
+
+    @http.route("/whatsapp/webhook", type="http", auth="public", methods=["POST"], csrf=False)
+    def whatsapp_webhook_receive(self, **kwargs):
+        payload = request.get_json_data(silent=True) or {}
+        self._process_whatsapp_payload(payload)
+        return request.make_json_response({"status": "ok"})
+
+    @http.route("/my/tourism/profile", type="http", auth="user", website=True)
+    def my_tourism_profile(self, **kwargs):
+        user = request.env.user
+        partner = user.partner_id.sudo()
+        posts = (
+            request.env["tourism.post"]
+            .sudo()
+            .search([("author_id", "=", partner.id)], order="create_date desc")
+        )
+        values = {
+            "partner": partner,
+            "posts": posts,
+        }
+        return request.render("tourism_provider_portal.my_tourism_profile", values)
+
+    @http.route("/my/tourism/profile/save", type="http", auth="user", methods=["POST"], website=True, csrf=True)
+    def save_tourism_profile(self, **post):
+        partner = request.env.user.partner_id.sudo()
+        vals = {
+            "name": post.get("name") or partner.name,
+            "phone": post.get("phone"),
+            "whatsapp_number": post.get("whatsapp_number") or partner.whatsapp_number,
+            "tourism_profile_description": post.get("tourism_profile_description"),
+        }
+        cover_file = request.httprequest.files.get("cover_image")
+        if cover_file:
+            vals["cover_image"] = cover_file.read()
+        partner.write(vals)
+        return request.redirect("/my/tourism/profile")
+
+    @http.route("/my/tourism/post/create", type="http", auth="user", methods=["POST"], website=True, csrf=True)
+    def create_tourism_post(self, **post):
+        content = (post.get("content") or "").strip()
+        if not content:
+            return request.redirect("/my/tourism/profile")
+
+        vals = {
+            "content": content,
+            "author_id": request.env.user.partner_id.id,
+            "is_published": True,
+        }
+        image_file = request.httprequest.files.get("image")
+        if image_file:
+            vals["image"] = image_file.read()
+
+        request.env["tourism.post"].sudo().create(vals)
+        return request.redirect("/my/tourism/profile")
 
     @http.route(
-        "/whatsapp/webhook",
+        "/my/tourism/post/<int:post_id>/edit",
         type="http",
-        auth="public",
+        auth="user",
         methods=["POST"],
-        csrf=False,
+        website=True,
+        csrf=True,
     )
-    def whatsapp_webhook_receive(self, **kwargs):
-        try:
-            payload = request.httprequest.get_json(silent=True) or {}
-            self._process_payload(payload)
-        except Exception:
-            _logger.exception("Error inesperado al procesar el webhook de WhatsApp")
-        return request.make_response("ok", status=200)
+    def edit_tourism_post(self, post_id, **post):
+        record = request.env["tourism.post"].sudo().browse(post_id)
+        if not record.exists() or (
+            record.author_id != request.env.user.partner_id
+            and not request.env.user.has_group("base.group_system")
+        ):
+            return request.redirect("/my/tourism/profile")
 
-    def _process_payload(self, payload):
+        vals = {"content": (post.get("content") or record.content).strip()}
+        image_file = request.httprequest.files.get("image")
+        if image_file:
+            vals["image"] = image_file.read()
+        record.write(vals)
+        return request.redirect("/my/tourism/profile")
+
+    @http.route(
+        "/my/tourism/post/<int:post_id>/delete",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        website=True,
+        csrf=True,
+    )
+    def delete_tourism_post(self, post_id, **kwargs):
+        record = request.env["tourism.post"].sudo().browse(post_id)
+        if record.exists() and (
+            record.author_id == request.env.user.partner_id
+            or request.env.user.has_group("base.group_system")
+        ):
+            record.unlink()
+        return request.redirect("/my/tourism/profile")
+
+    @http.route("/tourism/feed", type="http", auth="public", website=True)
+    def tourism_feed(self, **kwargs):
+        posts = (
+            request.env["tourism.post"]
+            .sudo()
+            .search([("is_published", "=", True)], order="create_date desc")
+        )
+        return request.render("tourism_provider_portal.tourism_feed", {"posts": posts})
+
+    def _process_whatsapp_payload(self, payload):
+        entries = payload.get("entry", [])
         partner_model = request.env["res.partner"].sudo()
-        for entry in payload.get("entry", []):
+
+        for entry in entries:
             for change in entry.get("changes", []):
                 value = change.get("value", {})
-                for message in value.get("messages", []):
+                messages = value.get("messages", [])
+                for message in messages:
                     wa_id = message.get("from")
                     if not wa_id:
                         continue
@@ -323,61 +141,71 @@ class WhatsAppWebhookController(http.Controller):
                     if not partner:
                         partner = partner_model.create(
                             {
-                                "name": _("Usuario WhatsApp %s") % wa_id,
+                                "name": f"Usuario WhatsApp {wa_id}",
                                 "whatsapp_number": wa_id,
+                                "is_tourism_provider": True,
                                 "chatbot_state": "start",
-                                "tourism_status": "draft",
+                                "tourism_approval_state": "draft",
                             }
                         )
 
-                    self._advance_state(partner, message)
+                    approval_state = partner.tourism_approval_state
+                    if approval_state == "approved":
+                        partner._send_whatsapp_text_message(
+                            "Ya fuiste aprobado. Revisa el enlace que te enviamos para acceder a tu perfil."
+                        )
+                        continue
 
-    def _advance_state(self, partner, message):
-        state = partner.chatbot_state
-        msg_type = message.get("type")
-        text_body = (message.get("text") or {}).get("body", "").strip()
+                    if partner.chatbot_state == "start":
+                        partner._send_whatsapp_text_message(
+                            "¡Hola! Bienvenido al portal turístico. Para comenzar, envíame tu nombre completo."
+                        )
+                        partner.chatbot_state = "asking_name"
+                        continue
 
-        if state == "start":
-            partner.write({"chatbot_state": "asking_name"})
-            partner._send_whatsapp_text_message(
-                _("¡Hola! Bienvenido al portal de turismo. Para registrarte, escribe tu nombre completo.")
-            )
-            return
+                    if partner.chatbot_state == "asking_name":
+                        text_body = ((message.get("text") or {}).get("body") or "").strip()
+                        if text_body:
+                            partner.write({"name": text_body, "chatbot_state": "asking_photo"})
+                            partner._send_whatsapp_text_message(
+                                "Gracias. Ahora envíame una foto de perfil."
+                            )
+                        else:
+                            partner._send_whatsapp_text_message(
+                                "Necesito tu nombre completo para continuar. Envíalo por texto, por favor."
+                            )
+                        continue
 
-        if state == "asking_name":
-            if not text_body:
-                partner._send_whatsapp_text_message(
-                    _("Por favor, escribe tu nombre completo para continuar.")
-                )
-                return
-            partner.write({"name": text_body, "chatbot_state": "asking_photo"})
-            partner._send_whatsapp_text_message(
-                _("¡Gracias! Ahora, por favor envíame una foto para tu perfil.")
-            )
-            return
+                    if partner.chatbot_state == "asking_photo":
+                        image_data = message.get("image") or {}
+                        media_id = image_data.get("id")
+                        if not media_id:
+                            partner._send_whatsapp_text_message(
+                                "Necesito una foto para continuar. Envíame una imagen, por favor."
+                            )
+                            continue
 
-        if state == "asking_photo":
-            if msg_type != "image":
-                partner._send_whatsapp_text_message(
-                    _("Necesito una imagen para continuar. Por favor envía una foto.")
-                )
-                return
-            media_id = (message.get("image") or {}).get("id")
-            if not media_id:
-                partner._send_whatsapp_text_message(
-                    _("No encontré la imagen. Intenta enviarla de nuevo, por favor.")
-                )
-                return
-            partner.action_process_whatsapp_photo(media_id)
-            return
+                        try:
+                            partner._download_and_store_whatsapp_image(media_id)
+                            partner.write(
+                                {
+                                    "chatbot_state": "completed",
+                                    "tourism_approval_state": "pending",
+                                }
+                            )
+                            partner._send_whatsapp_text_message(
+                                "Perfil completado. En revisión por el comité."
+                            )
+                        except Exception as exc:  # noqa: BLE001
+                            _logger.exception("Error processing WhatsApp image: %s", exc)
+                            partner._send_whatsapp_text_message(
+                                "Hubo un error procesando tu imagen. Intenta enviarla nuevamente."
+                            )
+                        continue
 
-        if state == "in_review":
-            partner._send_whatsapp_text_message(
-                _("Tu perfil sigue en revisión. Te avisaremos cuando sea aprobado.")
-            )
-            return
+                    if partner.chatbot_state == "completed":
+                        partner._send_whatsapp_text_message(
+                            "Tu perfil ya fue enviado a revisión. Te avisaremos por WhatsApp."
+                        )
 
-        if state == "approved":
-            partner._send_whatsapp_text_message(
-                _("Tu perfil ya está aprobado. Gracias por comunicarte.")
-            )
+        _logger.debug("Processed WhatsApp payload: %s", json.dumps(payload))
