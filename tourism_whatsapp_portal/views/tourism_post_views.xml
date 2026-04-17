@@ -1,0 +1,37 @@
+<odoo>
+    <record id="view_tourism_post_tree" model="ir.ui.view">
+        <field name="name">tourism.post.tree</field>
+        <field name="model">tourism.post</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="author_id"/>
+                <field name="content"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_tourism_post_form" model="ir.ui.view">
+        <field name="name">tourism.post.form</field>
+        <field name="model">tourism.post</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="author_id"/>
+                        <field name="content"/>
+                        <field name="image" widget="image"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_tourism_post" model="ir.actions.act_window">
+        <field name="name">Publicaciones turismo</field>
+        <field name="res_model">tourism.post</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_tourism_posts" name="Publicaciones" parent="menu_tourism_root" action="action_tourism_post" sequence="20"/>
+</odoo>
