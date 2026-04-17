@@ -10,6 +10,6 @@
         "views/res_config_settings_views.xml",
         "views/res_partner_views.xml",
     ],
-    "installable": True,
+    "installable": False,
     "application": False,
 }

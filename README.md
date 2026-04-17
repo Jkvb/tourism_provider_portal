@@ -1,6 +1,30 @@
 # tourism_provider_portal
 
-Módulo Odoo 19 para gestionar prestadores turísticos con experiencia **web-first**.
+Módulo Odoo 18 para gestionar prestadores turísticos con experiencia **web-first**.
+
+> Sí: **el módulo principal ya incluye el flujo web + WhatsApp**.  
+> El módulo interno `whatsapp_turismo_bot/` quedó como variante legacy **deshabilitada** (`installable=False`) para forzar operación en **un solo módulo**: `tourism_provider_portal`.
+
+## ¿Qué módulo instalo?
+
+### Opción recomendada (producción)
+Instala **solo** `tourism_provider_portal`.
+
+---
+
+## Instalación paso a paso
+
+1. Copia este repositorio a tu ruta de addons (por ejemplo `/mnt/extra-addons`).
+2. En Odoo, actualiza lista de apps.
+3. Instala el módulo **Tourism Provider Portal** (`tourism_provider_portal`).
+4. (Opcional) Configura WhatsApp en:
+   - **Ajustes → WhatsApp Turismo Bot**
+   - Captura:
+     - `WhatsApp Verify Token`
+     - `WhatsApp Access Token`
+     - `WhatsApp Phone Number ID`
+5. Configura en Meta la URL del webhook:
+   - `https://<tu-dominio>/whatsapp/webhook`
 
 ## Flujo implementado
 
@@ -27,10 +51,6 @@ Módulo Odoo 19 para gestionar prestadores turísticos con experiencia **web-fir
 - Portal solo puede crear/editar/eliminar sus propios posts.
 - Público solo ve perfiles publicados.
 - Público solo ve posts publicados de perfiles publicados.
-
-## Limpieza de canales externos
-
-El módulo quedó 100% centrado en la experiencia web del portal.
 
 ## Actualización del módulo
 

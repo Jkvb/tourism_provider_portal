@@ -14,7 +14,8 @@
                     <field name="tourism_status"/>
                 </group>
             </xpath>
-            <xpath expr="//header" position="inside">
+            <xpath expr="//form/sheet" position="before">
+                <header>
                 <button
                     name="action_approve_tourism"
                     type="object"
@@ -22,6 +23,7 @@
                     class="btn-primary"
                     invisible="tourism_status != 'pending'"
                 />
+                </header>
             </xpath>
         </field>
     </record>
@@ -30,12 +32,12 @@
         <field name="name">res.partner.tree.tourism.pending</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="whatsapp_number"/>
                 <field name="chatbot_state"/>
                 <field name="tourism_status"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -69,7 +71,7 @@
     <record id="action_tourism_pending_partners" model="ir.actions.act_window">
         <field name="name">Solicitudes de Turismo</field>
         <field name="res_model">res.partner</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="domain">[("tourism_status", "=", "pending")]
         </field>
         <field name="context">{"search_default_filter_pending_tourism": 1}</field>
