@@ -1,69 +1,90 @@
 # tourism_provider_portal
 
-Módulo Odoo 18 para gestionar prestadores turísticos con experiencia **web-first**.
+## Política funcional obligatoria
 
-> Sí: **el módulo principal ya incluye el flujo web + WhatsApp**.  
-> El módulo interno `whatsapp_turismo_bot/` es una variante separada/legacy y **no se recomienda instalarlo junto con `tourism_provider_portal`** porque ambos extienden `res.partner` con campos del mismo nombre.
+Este módulo **NO** permite registro web inicial. Están prohibidas rutas y formularios públicos de alta inicial (`/register`, `/signup`, `/turismo/registro` o equivalentes).
 
-## ¿Qué módulo instalo?
+El onboarding inicial de prestadores turísticos es **100% por WhatsApp** con Meta Cloud API.
 
-### Opción recomendada (producción)
-Instala **solo** `tourism_provider_portal`.
+## Flujo oficial (único flujo permitido)
 
-### Opción alternativa (solo pruebas aisladas)
-Instala `whatsapp_turismo_bot` **en otra base de datos**, si quieres probar únicamente ese bot minimalista.
+1. El prestador escribe por WhatsApp al número del bot.
+2. El bot solicita y captura su nombre completo.
+3. El bot solicita y captura su foto de perfil.
+4. El partner queda en revisión (`pending`) para comité.
+5. El comité aprueba o rechaza en backend Odoo (menú CRM > Turismo > Solicitudes WhatsApp).
+6. Si se aprueba, se crea automáticamente el usuario portal (si no existía).
+7. Se envía por WhatsApp un enlace para definir contraseña.
+8. El prestador accede al portal web autenticado.
+9. Edita su perfil en `/my/tourism/profile`.
+10. Crea publicaciones visibles en `/tourism/feed`.
 
----
+## Configuración Meta Cloud API
 
-## Instalación paso a paso
+Configurar en `Ajustes > Parámetros del sistema`:
 
-1. Copia este repositorio a tu ruta de addons (por ejemplo `/mnt/extra-addons`).
-2. En Odoo, actualiza lista de apps.
-3. Instala el módulo **Tourism Provider Portal** (`tourism_provider_portal`).
-4. (Opcional) Configura WhatsApp en:
-   - **Ajustes → WhatsApp Turismo Bot**
-   - Captura:
-     - `WhatsApp Verify Token`
-     - `WhatsApp Access Token`
-     - `WhatsApp Phone Number ID`
-5. Configura en Meta la URL del webhook:
-   - `https://<tu-dominio>/whatsapp/webhook`
+- `tourism_provider_portal.verify_token`
+- `tourism_provider_portal.access_token`
+- `tourism_provider_portal.phone_number_id`
+- `tourism_provider_portal.graph_api_version` (opcional, fallback `v18.0`)
 
-## Flujo implementado
+## Webhook
 
-1. **Registro ultra simple** en `/turismo/registro` (solo correo + confirmar correo).
-2. Se crea usuario portal inactivo + perfil mínimo `tourism.provider` en estado `incomplete`.
-3. Se envía correo de confirmación con token único.
-4. Confirmación en `/turismo/confirmar/<token>` activa la cuenta y dispara email de seteo de contraseña.
-5. El prestador entra a `/my/turismo/perfil` para completar onboarding frontend.
-6. Puede enviar a revisión cuando el perfil esté completo.
-7. Admin/validador aprueban y publican.
-8. Perfil público visual en `/turismo/prestador/<slug>` con portada, avatar y feed de posts.
+- Verificación: `GET /whatsapp/webhook`
+  - valida `hub.mode`, `hub.verify_token`, `hub.challenge`.
+- Eventos: `POST /whatsapp/webhook`
+  - procesa payload de Meta Cloud API y avanza estados de onboarding.
 
-## Estados recomendados
+## Gestión administrativa (CRM)
 
-- `incomplete`: cuenta creada, perfil incompleto.
-- `pending`: listo para revisión.
-- `approved`: aprobado internamente.
-- `published`: visible públicamente.
-- `rejected` / `unpublished`: control editorial.
+Menú:
 
-## Seguridad
+- CRM
+  - Turismo
+    - Solicitudes WhatsApp
+    - Publicaciones
 
-- Portal solo puede editar su propio perfil.
-- Portal solo puede crear/editar/eliminar sus propios posts.
-- Público solo ve perfiles publicados.
-- Público solo ve posts publicados de perfiles publicados.
+En solicitudes se revisan estados, foto, datos de WhatsApp y se ejecutan acciones:
 
-## Actualización del módulo
+- **Aprobar**: cambia a `approved`, crea usuario portal, genera enlace signup/reset y notifica por WhatsApp.
+- **Rechazar**: cambia a `rejected` y notifica por WhatsApp.
 
-```bash
-odoo -d <db> -u tourism_provider_portal --stop-after-init
-```
+## Portal y red social
 
-## Notas de migración
+### `/my/tourism/profile`
 
-- Se agregaron campos de confirmación de correo: `signup_email`, `email_confirmed`, `confirmation_token`, `confirmation_sent_date`, `confirmation_date`.
-- `name`, `responsible_name` y `category_id` en `tourism.provider` dejaron de ser obligatorios al crear registro mínimo.
-- Nuevo estado `incomplete`.
-- Se agregó dependencia `auth_signup` para flujo de activación/reset password.
+Usuario autenticado puede:
+
+- Editar nombre, móvil, WhatsApp, descripción y portada.
+- Ver sus publicaciones.
+- Crear publicaciones.
+- Editar o borrar sus propias publicaciones.
+
+### `/tourism/feed`
+
+Feed público estilo red social con cards Bootstrap que muestra:
+
+- Nombre del prestador.
+- Foto de perfil (`image_1920`).
+- Portada (`cover_image`) si existe.
+- Contenido e imagen del post.
+- Fecha de publicación.
+
+## Pruebas manuales sugeridas
+
+1. Configurar parámetros de Meta API.
+2. Verificar webhook con Meta (`GET /whatsapp/webhook`).
+3. Enviar mensaje WhatsApp y completar flujo (nombre + foto).
+4. Confirmar partner creado con `pending`.
+5. Aprobar desde CRM y validar creación de usuario portal.
+6. Abrir link recibido por WhatsApp y definir contraseña.
+7. Iniciar sesión y editar perfil en `/my/tourism/profile`.
+8. Crear/editar/borrar posts propios.
+9. Revisar `/tourism/feed` con publicaciones aprobadas.
+
+## Notas técnicas
+
+- `whatsapp_number` tiene unicidad SQL.
+- Usuario portal **solo** se crea al aprobar.
+- Reglas de seguridad limitan portal a su propio perfil y sus propios posts.
+- La foto principal del perfil siempre usa `image_1920`.
