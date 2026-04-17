@@ -12,16 +12,14 @@
                 <group string="Turismo por WhatsApp">
                     <field name="chatbot_state"/>
                     <field name="tourism_status"/>
+                    <button
+                        name="action_approve_tourism"
+                        type="object"
+                        string="Aprobar Turismo"
+                        class="btn-primary"
+                        invisible="tourism_status != 'pending'"
+                    />
                 </group>
-            </xpath>
-            <xpath expr="//header" position="inside">
-                <button
-                    name="action_approve_tourism"
-                    type="object"
-                    string="Aprobar Turismo"
-                    class="btn-primary"
-                    invisible="tourism_status != 'pending'"
-                />
             </xpath>
         </field>
     </record>
