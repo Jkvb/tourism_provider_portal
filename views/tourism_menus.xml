@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_tourism_root" name="Turismo" sequence="5" groups="tourism_provider_portal.group_tourism_admin,tourism_provider_portal.group_tourism_validator"/>
+    <menuitem id="menu_tourism_root" name="Turismo" sequence="5" groups="group_tourism_admin,group_tourism_validator"/>
 
     <menuitem id="menu_tourism_provider" name="Prestadores" parent="menu_tourism_root" action="action_tourism_provider" sequence="10"/>
     <menuitem id="menu_tourism_provider_pending" name="Solicitudes pendientes" parent="menu_tourism_root" action="action_tourism_provider_pending" sequence="20"/>
