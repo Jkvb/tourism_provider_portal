@@ -4,13 +4,13 @@
         <field name="name">res.partner.tourism.provider.tree</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="whatsapp_number"/>
                 <field name="chatbot_state"/>
                 <field name="tourism_approval_state"/>
                 <field name="is_tourism_provider"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -50,7 +50,7 @@
                         <group>
                             <field name="image_1920" widget="image" class="oe_avatar"/>
                             <field name="cover_image" widget="image"/>
-                            <field name="website_description"/>
+                            <field name="tourism_profile_description"/>
                         </group>
                     </group>
                 </sheet>

@@ -36,6 +36,7 @@ class ResPartner(models.Model):
         string="Approval State",
     )
     cover_image = fields.Image(string="Cover Image")
+    tourism_profile_description = fields.Text(string="Profile Description")
 
     _sql_constraints = [
         (

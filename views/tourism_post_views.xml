@@ -4,12 +4,12 @@
         <field name="name">tourism.post.tree</field>
         <field name="model">tourism.post</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="create_date"/>
                 <field name="author_id"/>
                 <field name="content"/>
                 <field name="is_published"/>
-            </tree>
+            </list>
         </field>
     </record>
 

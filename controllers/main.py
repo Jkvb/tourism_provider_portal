@@ -21,11 +21,11 @@ class TourismProviderPortalController(http.Controller):
             return request.make_response(challenge, headers=[("Content-Type", "text/plain")])
         return request.make_response("Verification failed", status=403)
 
-    @http.route("/whatsapp/webhook", type="json", auth="public", methods=["POST"], csrf=False)
+    @http.route("/whatsapp/webhook", type="http", auth="public", methods=["POST"], csrf=False)
     def whatsapp_webhook_receive(self, **kwargs):
-        payload = request.jsonrequest or {}
+        payload = request.get_json_data(silent=True) or {}
         self._process_whatsapp_payload(payload)
-        return {"status": "ok"}
+        return request.make_json_response({"status": "ok"})
 
     @http.route("/my/tourism/profile", type="http", auth="user", website=True)
     def my_tourism_profile(self, **kwargs):
@@ -49,7 +49,7 @@ class TourismProviderPortalController(http.Controller):
             "name": post.get("name") or partner.name,
             "phone": post.get("phone"),
             "whatsapp_number": post.get("whatsapp_number") or partner.whatsapp_number,
-            "website_description": post.get("website_description"),
+            "tourism_profile_description": post.get("tourism_profile_description"),
         }
         cover_file = request.httprequest.files.get("cover_image")
         if cover_file:

@@ -28,7 +28,7 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" rows="4" name="website_description"><t t-out="partner.website_description or ''"/></textarea>
+                                    <textarea class="form-control" rows="4" name="tourism_profile_description"><t t-out="partner.tourism_profile_description or ''"/></textarea>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary mt-3">Guardar Perfil</button>
