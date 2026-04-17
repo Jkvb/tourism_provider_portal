@@ -1,85 +1,80 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="view_partner_form_whatsapp_tourism" model="ir.ui.view">
-        <field name="name">res.partner.form.whatsapp.tourism</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='mobile']" position="after">
-                <field name="whatsapp_number"/>
-            </xpath>
-            <xpath expr="//sheet/group" position="inside">
-                <group string="Turismo por WhatsApp">
-                    <field name="chatbot_state"/>
-                    <field name="tourism_status"/>
-                </group>
-            </xpath>
-            <xpath expr="//form/sheet" position="before">
-                <header>
-                    <button
-                        name="action_approve_tourism"
-                        type="object"
-                        string="Aprobar Turismo"
-                        class="btn-primary"
-                        invisible="tourism_status != 'pending'"
-                    />
-                </header>
-            </xpath>
-        </field>
-    </record>
-
-    <record id="view_partner_tree_tourism_pending" model="ir.ui.view">
-        <field name="name">res.partner.tree.tourism.pending</field>
+    <record id="view_tourism_partner_tree" model="ir.ui.view">
+        <field name="name">res.partner.tourism.provider.tree</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
                 <field name="whatsapp_number"/>
                 <field name="chatbot_state"/>
-                <field name="tourism_status"/>
+                <field name="tourism_approval_state"/>
+                <field name="is_tourism_provider"/>
             </list>
         </field>
     </record>
 
-    <record id="view_partner_kanban_tourism_pending" model="ir.ui.view">
-        <field name="name">res.partner.kanban.tourism.pending</field>
+    <record id="view_tourism_partner_search" model="ir.ui.view">
+        <field name="name">res.partner.tourism.provider.search</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <kanban>
+            <search>
                 <field name="name"/>
                 <field name="whatsapp_number"/>
-                <field name="chatbot_state"/>
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click">
-                            <strong><field name="name"/></strong>
-                            <div>
-                                <span>WhatsApp:</span>
-                                <field name="whatsapp_number"/>
-                            </div>
-                            <div>
-                                <span>Estado chatbot:</span>
-                                <field name="chatbot_state"/>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
+                <filter name="pending" string="Pending" domain="[('tourism_approval_state','=','pending')]"/>
+                <filter name="approved" string="Approved" domain="[('tourism_approval_state','=','approved')]"/>
+                <filter name="rejected" string="Rejected" domain="[('tourism_approval_state','=','rejected')]"/>
+                <filter name="completed" string="Completed Chatbot" domain="[('chatbot_state','=','completed')]"/>
+            </search>
         </field>
     </record>
 
-    <record id="action_tourism_pending_partners" model="ir.actions.act_window">
-        <field name="name">Solicitudes de Turismo</field>
-        <field name="res_model">res.partner</field>
-        <field name="view_mode">list,kanban,form</field>
-        <field name="domain">[("tourism_status", "=", "pending")]</field>
+    <record id="view_tourism_partner_form" model="ir.ui.view">
+        <field name="name">res.partner.tourism.provider.form</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_approve_provider" type="object" string="Approve" class="btn-primary" invisible="tourism_approval_state != 'pending'"/>
+                    <button name="action_reject_provider" type="object" string="Reject" class="btn-secondary" invisible="tourism_approval_state not in ('pending','draft')"/>
+                    <field name="tourism_approval_state" widget="statusbar" statusbar_visible="draft,pending,approved,rejected"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="whatsapp_number"/>
+                            <field name="chatbot_state"/>
+                            <field name="is_tourism_provider"/>
+                        </group>
+                        <group>
+                            <field name="image_1920" widget="image" class="oe_avatar"/>
+                            <field name="cover_image" widget="image"/>
+                            <field name="website_description"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
     </record>
 
-    <menuitem
-        id="menu_tourism_pending_root"
-        name="Solicitudes de Turismo"
-        parent="contacts.menu_contacts"
-        action="action_tourism_pending_partners"
-        sequence="95"
-    />
+    <record id="action_tourism_whatsapp_requests" model="ir.actions.act_window">
+        <field name="name">Solicitudes WhatsApp</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_tourism_partner_search"/>
+        <field name="domain">[('is_tourism_provider','=',True)]</field>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <record id="portal_partner_own_profile_rule" model="ir.rule">
+        <field name="name">Portal own partner profile</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('id', '=', user.partner_id.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
 </odoo>
